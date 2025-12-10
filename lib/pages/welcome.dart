@@ -36,7 +36,7 @@ class _WelcomePageState extends State<WelcomePage>
     });
   }
 
-  void _initTts() async {
+  Future<void> _initTts() async {
     flutterTts = FlutterTts();
     await flutterTts.awaitSpeakCompletion(true);
     await flutterTts.setLanguage("hi-IN");
@@ -374,9 +374,9 @@ class _WelcomePageState extends State<WelcomePage>
                             size: 18,
                           ),
                           const SizedBox(width: 8),
-                          Text(
+                          const Text(
                             'Hindi voice support available',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'OpenSans',
                               fontSize: 13,
                               color: Color(0xFF6A3BFF),
@@ -537,72 +537,71 @@ class _WelcomePageState extends State<WelcomePage>
             ),
           ),
 
-          // Overlay shown while speaking - blocks interaction underneath
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _isSpeaking
-                ? Positioned.fill(
-                    key: const ValueKey('speaking_overlay'),
-                    child: Stack(
-                      children: [
-                        // Dark overlay background
-                        Container(color: Colors.black.withOpacity(0.45)),
+          // Overlay shown while speaking - DIRECT child of Stack (no AnimatedSwitcher)
+          if (_isSpeaking)
+            Positioned.fill(
+              key: const ValueKey('speaking_overlay'),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 300),
+                opacity: _isSpeaking ? 1.0 : 0.0,
+                curve: Curves.easeInOut,
+                child: Stack(
+                  children: [
+                    // Dark overlay background
+                    Container(color: Colors.black.withOpacity(0.45)),
 
-                        // Skip button at bottom-right (highlighted when currentStep==4)
-                        Positioned(
-                          bottom: 30,
-                          right: 20,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: _currentStep == 4
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.redAccent.withOpacity(
-                                          0.8,
-                                        ),
-                                        blurRadius: 20,
-                                        spreadRadius: 3,
-                                      ),
-                                    ]
-                                  : [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.25),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
+                    // Skip button at bottom-right (highlighted when currentStep==4)
+                    Positioned(
+                      bottom: 30,
+                      right: 20,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: _currentStep == 4
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.redAccent.withOpacity(0.8),
+                                    blurRadius: 20,
+                                    spreadRadius: 3,
+                                  ),
+                                ]
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.25),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _skipSpeaking,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF9B4DFF),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 18,
                             ),
-                            child: ElevatedButton(
-                              onPressed: _skipSpeaking,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF9B4DFF),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                  horizontal: 18,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 4,
-                              ),
-                              child: Text(
-                                'Skip',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 4,
+                          ),
+                          child: Text(
+                            'Skip',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  )
-                : const SizedBox.shrink(),
-          ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
