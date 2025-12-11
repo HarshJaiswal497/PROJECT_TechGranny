@@ -385,27 +385,40 @@ class _LogInPageState extends State<LogInPage> with TickerProviderStateMixin {
     );
   }
 
-  // Mic icon builder
+  // Mic icon builder - UPDATED: red when idle, green when listening, greyed when TTS speaks
   Widget micIcon(String field) {
     final bool active = _isListening && _listeningField == field;
+
+    // color rules:
+    // - if TTS speaking, greyed out
+    // - otherwise green when active, red when idle
+    final Color iconColor = _isSpeaking
+        ? Colors.grey
+        : (active ? Colors.green : Colors.red);
+
     return IconButton(
       icon: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(
-            active ? Icons.mic : Icons.mic_none,
-            color: active ? Colors.white : Colors.black54,
-          ),
+          Icon(active ? Icons.mic : Icons.mic_none, color: iconColor, size: 28),
+          // show a small green glowing dot when actively listening
           if (active)
             Positioned(
               right: 0,
               bottom: 0,
               child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: Colors.green,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.7),
+                      blurRadius: 6,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
               ),
             ),
