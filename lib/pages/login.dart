@@ -306,7 +306,7 @@ class _LogInPageState extends State<LogInPage> with TickerProviderStateMixin {
           }
         },
         listenMode: stt.ListenMode.confirmation,
-        localeId: 'hi_IN',
+        localeId: 'en_IN',
         onSoundLevelChange: null,
       );
     } catch (e) {
