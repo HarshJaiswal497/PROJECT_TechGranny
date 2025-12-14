@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "838039441032",
+    "project_id": "techgranny",
+    "storage_bucket": "techgranny.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:838039441032:android:864a972c99dee2d228993d",
+        "android_client_info": {
+          "package_name": "com.example.techgrannyapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGiH4mWhpZMmhR1X8gPhJh1OqHPFCjDcM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
