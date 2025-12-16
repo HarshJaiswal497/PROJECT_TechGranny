@@ -6,7 +6,6 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:techgrannyapp/main_shell.dart';
-import 'package:techgrannyapp/pages/home.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});

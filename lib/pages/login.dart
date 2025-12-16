@@ -5,7 +5,6 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:techgrannyapp/main_shell.dart';
-import 'package:techgrannyapp/pages/home.dart';
 
 class LogInPage extends StatefulWidget {
   const LogInPage({super.key});
