@@ -2,6 +2,8 @@
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,6 +14,43 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
+
+  //fetching user data
+  String _userName = '';
+  bool _loadingName = true;
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserName();
+  }
+
+  Future<void> _fetchUserName() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        setState(() {
+          _userName = doc['name'] ?? '';
+          _loadingName = false;
+        });
+      } else {
+        setState(() {
+          _loadingName = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching user name: $e');
+      setState(() {
+        _loadingName = false;
+      });
+    }
+  }
 
   final List<IconData> _icons = [
     Icons.home_rounded,
@@ -73,19 +112,24 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              const Expanded(
+                              Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "Hi, Sushma Ji 👋",
-                                      style: TextStyle(
+                                      _loadingName
+                                          ? "Hi 👋"
+                                          : _userName.isNotEmpty
+                                          ? "Hi, $_userName Ji 👋"
+                                          : "Hi 👋",
+                                      style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black87,
                                       ),
                                     ),
-                                    Text(
+
+                                    const Text(
                                       "Welcome back!",
                                       style: TextStyle(
                                         fontSize: 14,
@@ -341,7 +385,10 @@ class _HomePageState extends State<HomePage> {
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.70),
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.deepPurple.withOpacity(0.12),
