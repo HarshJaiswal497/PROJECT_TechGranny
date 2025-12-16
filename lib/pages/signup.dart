@@ -5,6 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:techgrannyapp/main_shell.dart';
 import 'package:techgrannyapp/pages/home.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -413,7 +414,7 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const HomePage()),
+      MaterialPageRoute(builder: (_) => const MainShell()),
     );
   }
 }

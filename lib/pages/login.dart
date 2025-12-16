@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:techgrannyapp/main_shell.dart';
 import 'package:techgrannyapp/pages/home.dart';
 
 class LogInPage extends StatefulWidget {
@@ -194,7 +195,7 @@ class _LogInPageState extends State<LogInPage> {
       await FirebaseAuth.instance.signInWithCredential(cred);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(builder: (_) => const MainShell()),
       );
     } catch (_) {
       await _tts.speak("ओटीपी गलत है।");

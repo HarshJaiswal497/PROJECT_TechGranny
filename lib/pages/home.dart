@@ -4,30 +4,66 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final VoidCallback onViewAllTutorials;
+  final VoidCallback onViewAllAppointments;
+  const HomePage({
+    super.key,
+    required this.onViewAllTutorials,
+    required this.onViewAllAppointments,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  int _currentIndex = 0;
 
-  //fetching user data
+  // ---------------- USER DATA ----------------
   String _userName = '';
   bool _loadingName = true;
+
+  // ---------------- VOICE / OVERLAY ----------------
+  final FlutterTts _tts = FlutterTts();
+  bool _isSpeaking = false;
+  bool _shouldStop = false;
+
+  // highlight targets
+  // 0 = none
+  // 1 = header
+  // 2 = continue learning
+  // 3 = explore tutorials
+  // 4 = appointment section
+  // 5 = bottom navigation
+  int _highlightTarget = 0;
+
   @override
   void initState() {
     super.initState();
     _fetchUserName();
+    _initTts();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _speakHomeInstructions();
+    });
+  }
+
+  Future<void> _initTts() async {
+    await _tts.awaitSpeakCompletion(true);
+    await _tts.setLanguage("hi-IN");
+    await _tts.setSpeechRate(0.45);
+    await _tts.setVolume(1.0);
   }
 
   Future<void> _fetchUserName() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        _loadingName = false;
+        return;
+      }
 
       final doc = await FirebaseFirestore.instance
           .collection('users')
@@ -40,401 +76,394 @@ class _HomePageState extends State<HomePage> {
           _loadingName = false;
         });
       } else {
-        setState(() {
-          _loadingName = false;
-        });
+        setState(() => _loadingName = false);
       }
     } catch (e) {
       debugPrint('Error fetching user name: $e');
-      setState(() {
-        _loadingName = false;
-      });
+      setState(() => _loadingName = false);
     }
   }
-
-  final List<IconData> _icons = [
-    Icons.home_rounded,
-    Icons.menu_book_rounded,
-    Icons.calendar_month_rounded,
-    Icons.person_rounded,
-  ];
-
-  final List<String> _labels = ["Home", "Learn", "Appointments", "Profile"];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true, // Allows blur behind nav bar
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: SweepGradient(
-            center: Alignment.center,
-            startAngle: 0.0,
-            endAngle: 6.28319,
-            colors: [
-              Color(0xFFEBD4FF),
-              Color(0xFFFFE4F3),
-              Color(0xFFCCE5FF),
-              Color(0xFFEBD4FF),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 80),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 🔹 Frosted Glass Header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+      extendBody: true,
+      body: Stack(
+        children: [
+          // ================= MAIN CONTENT =================
+          Container(
+            decoration: const BoxDecoration(
+              gradient: SweepGradient(
+                center: Alignment.center,
+                startAngle: 0.0,
+                endAngle: 6.28319,
+                colors: [
+                  Color(0xFFEBD4FF),
+                  Color(0xFFFFE4F3),
+                  Color(0xFFCCE5FF),
+                  Color(0xFFEBD4FF),
+                ],
+              ),
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 80),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ================= HEADER =================
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _highlightWrapper(
+                        active: _highlightTarget == 1,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.35),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const CircleAvatar(
+                                    radius: 26,
+                                    backgroundImage: AssetImage(
+                                      'assets/images/profile.jpg',
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _loadingName
+                                              ? "Hi 👋"
+                                              : _userName.isNotEmpty
+                                              ? "Hi, $_userName Ji 👋"
+                                              : "Hi 👋",
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const Text(
+                                          "Welcome back!",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // 🔊 VOICE REPLAY ICON
+                                  GestureDetector(
+                                    onTap: () async {
+                                      await _tts.stop();
+                                      _speakHomeInstructions();
+                                    },
+                                    child: const CircleAvatar(
+                                      backgroundColor: Colors.deepPurple,
+                                      child: Icon(
+                                        Icons.volume_up_rounded,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // ================= CONTINUE LEARNING =================
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _highlightWrapper(
+                        active: _highlightTarget == 2,
                         child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.35),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const CircleAvatar(
-                                radius: 26,
-                                backgroundImage: AssetImage(
-                                  'assets/images/profile.jpg',
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _loadingName
-                                          ? "Hi 👋"
-                                          : _userName.isNotEmpty
-                                          ? "Hi, $_userName Ji 👋"
-                                          : "Hi 👋",
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-
-                                    const Text(
-                                      "Welcome back!",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              CircleAvatar(
-                                backgroundColor: Colors.deepPurple,
-                                child: const Icon(
-                                  Icons.volume_up_rounded,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // 🔹 Continue Learning Card
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.deepPurple.withOpacity(0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Continue Learning",
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  "WhatsApp – Step 3 of 10",
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.black54,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                LinearProgressIndicator(
-                                  value: 0.3,
-                                  minHeight: 5,
-                                  borderRadius: BorderRadius.circular(8),
-                                  backgroundColor: Colors.grey[200],
-                                  color: Colors.green,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            onPressed: () {},
-                            child: const Text(
-                              "Resume",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  // 🔹 Explore Tutorials Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: sectionHeader(
-                      title: "Explore Tutorials",
-                      onPressed: () {},
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  SizedBox(
-                    height: 200,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.only(left: 16),
-                      children: [
-                        buildTutorialCard(
-                          "Make a Video Call",
-                          "assets/images/video.jpg",
-                          0.6,
-                          Icons.videocam_rounded,
-                        ),
-                        buildTutorialCard(
-                          "Pay Using UPI",
-                          "assets/images/upi.jpg",
-                          0.3,
-                          Icons.qr_code_2_rounded,
-                        ),
-                        buildTutorialCard(
-                          "Send Photos on WhatsApp",
-                          "assets/images/chat.jpg",
-                          0.8,
-                          Icons.chat_bubble_outline_rounded,
-                        ),
-                        buildTutorialCard(
-                          "Book a Doctor Online",
-                          "assets/images/doctor.jpg",
-                          0.0,
-                          Icons.local_hospital_rounded,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  // 🔹 Book an Appointment Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        sectionHeader(
-                          title: "Book an Appointment",
-                          onPressed: () {},
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.deepPurple.withOpacity(0.15),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
                           child: Row(
                             children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.asset(
-                                  "assets/images/video.jpg",
-                                  height: 60,
-                                  width: 60,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Expanded(
+                              Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      "Need more help?",
+                                    const Text(
+                                      "Continue Learning",
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      "Book an online session with a Tech Mentor via video call.",
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      "WhatsApp – Step 3 of 10",
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
+                                        color: Colors.black54,
                                         fontSize: 13,
-                                        color: Colors.black87,
                                       ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    LinearProgressIndicator(
+                                      value: 0.3,
+                                      minHeight: 5,
+                                      borderRadius: BorderRadius.circular(8),
+                                      backgroundColor: Colors.grey[200],
+                                      color: Colors.green,
                                     ),
                                   ],
                                 ),
                               ),
+                              const SizedBox(width: 10),
                               ElevatedButton(
+                                onPressed: () {},
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.deepPurple,
+                                  backgroundColor: Colors.green,
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
+                                    horizontal: 16,
                                     vertical: 10,
                                   ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                onPressed: () {},
                                 child: const Text(
-                                  "Book",
+                                  "Resume",
                                   style: TextStyle(color: Colors.white),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+
+                    const SizedBox(height: 25),
+
+                    // ================= EXPLORE TUTORIALS =================
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _highlightWrapper(
+                        active: _highlightTarget == 3,
+                        child: sectionHeader(
+                          title: "Explore Tutorials",
+                          onPressed: widget.onViewAllTutorials,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    SizedBox(
+                      height: 200,
+                      child: _highlightWrapper(
+                        active: _highlightTarget == 3,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.only(left: 16),
+                          children: [
+                            buildTutorialCard(
+                              "Make a Video Call",
+                              "assets/images/video.jpg",
+                              0.6,
+                              Icons.videocam_rounded,
+                            ),
+                            buildTutorialCard(
+                              "Pay Using UPI",
+                              "assets/images/upi.jpg",
+                              0.3,
+                              Icons.qr_code_2_rounded,
+                            ),
+                            buildTutorialCard(
+                              "Send Photos on WhatsApp",
+                              "assets/images/chat.jpg",
+                              0.8,
+                              Icons.chat_bubble_outline_rounded,
+                            ),
+                            buildTutorialCard(
+                              "Book a Doctor Online",
+                              "assets/images/doctor.jpg",
+                              0.0,
+                              Icons.local_hospital_rounded,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // ================= APPOINTMENT =================
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _highlightWrapper(
+                        active: _highlightTarget == 4,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            sectionHeader(
+                              title: "Book an Appointment",
+                              onPressed: widget.onViewAllAppointments,
+                            ),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.deepPurple.withOpacity(0.15),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.asset(
+                                      "assets/images/video.jpg",
+                                      height: 60,
+                                      width: 60,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Need more help?",
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          "Book an online session with a Tech Mentor via video call.",
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {},
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.deepPurple,
+                                    ),
+                                    child: const Text(
+                                      "Book",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
 
-      // 🔹 Frosted Glass Bottom Nav Bar
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.70),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 1,
+          // ================= OVERLAY =================
+          if (_isSpeaking) _buildOverlay(),
+        ],
+      ),
+    );
+  }
+
+  // ================= HIGHLIGHT WRAPPER =================
+  Widget _highlightWrapper({required bool active, required Widget child}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      decoration: BoxDecoration(
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: Colors.redAccent.withOpacity(0.8),
+                  blurRadius: 20,
+                  spreadRadius: 4,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.deepPurple.withOpacity(0.12),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+              ]
+            : [],
+      ),
+      child: child,
+    );
+  }
+
+  
+
+  // ================= OVERLAY =================
+  Widget _buildOverlay() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.45),
+        child: Align(
+          alignment: Alignment.bottomRight,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: ElevatedButton(
+              onPressed: _stopSpeaking,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9B4DFF),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 18,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: BottomNavigationBar(
-                backgroundColor: Colors.transparent,
-                type: BottomNavigationBarType.fixed,
-                showUnselectedLabels: true,
-                selectedItemColor: Colors.deepPurple,
-                unselectedItemColor: Colors.black54,
-                selectedFontSize: 13,
-                unselectedFontSize: 12,
-                currentIndex: _currentIndex,
-                elevation: 0,
-                onTap: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
-                items: List.generate(_icons.length, (index) {
-                  final isSelected = _currentIndex == index;
-                  return BottomNavigationBarItem(
-                    icon: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? Colors.deepPurple.withOpacity(0.15)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Icon(
-                        _icons[index],
-                        color: isSelected ? Colors.deepPurple : Colors.black54,
-                      ),
-                    ),
-                    label: _labels[index],
-                  );
-                }),
+              child: const Text(
+                "Skip",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -443,35 +472,84 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget sectionHeader({
-    required String title,
-    required VoidCallback onPressed,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        TextButton(
-          onPressed: onPressed,
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(50, 30),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          child: const Text(
-            "View All →",
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.deepPurple,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
+  // ================= VOICE INSTRUCTIONS =================
+  Future<void> _speakHomeInstructions() async {
+    if (_isSpeaking) return;
+
+    _shouldStop = false;
+    setState(() {
+      _isSpeaking = true;
+      _highlightTarget = 1;
+    });
+
+    bool abort() => _shouldStop;
+
+    try {
+      final name = _userName.isNotEmpty ? _userName : "जी";
+
+      await _tts.speak(
+        "नमस्ते $name! टेकग्रैनी में आपका बहुत बहुत स्वागत है। "
+        "यहाँ आप मोबाइल और इंटरनेट को आसान तरीके से सीख सकती हैं।",
+      );
+      if (abort()) return;
+
+      setState(() => _highlightTarget = 2);
+      await _tts.speak(
+        "यहाँ आप अपनी पढ़ाई वहीं से शुरू कर सकती हैं, "
+        "जहाँ आपने पिछली बार छोड़ा था। "
+        "रिज़्यूम बटन दबाकर आप आगे सीख सकती हैं।",
+      );
+      if (abort()) return;
+
+      setState(() => _highlightTarget = 3);
+      await _tts.speak(
+        "इस सेक्शन में छोटे छोटे ट्यूटोरियल हैं। "
+        "जैसे वीडियो कॉल करना, यूपीआई से पेमेंट करना, "
+        "या व्हाट्सएप इस्तेमाल करना। "
+        "किसी भी कार्ड को टैप करके सीखना शुरू करें।",
+      );
+      if (abort()) return;
+
+      setState(() => _highlightTarget = 4);
+      await _tts.speak(
+        "अगर आपको कहीं भी दिक्कत हो, "
+        "तो यहाँ से आप टेक मेंटर के साथ वीडियो कॉल बुक कर सकती हैं। "
+        "वे आपकी मदद करेंगे।",
+      );
+      if (abort()) return;
+
+      setState(() => _highlightTarget = 5);
+      await _tts.speak(
+        "नीचे नेविगेशन बार से आप होम, लर्न, अपॉइंटमेंट "
+        "और प्रोफाइल सेक्शन में जा सकती हैं।",
+      );
+      if (abort()) return;
+
+      setState(() => _highlightTarget = 1);
+      await _tts.speak(
+        "निर्देश दोबारा सुनने के लिए "
+        "ऊपर वॉइस आइकन को टैप करें। "
+        "हम हर कदम पर आपके साथ हैं।",
+      );
+    } catch (_) {}
+
+    setState(() {
+      _isSpeaking = false;
+      _highlightTarget = 0;
+      _shouldStop = false;
+    });
+  }
+
+  Future<void> _stopSpeaking() async {
+    _shouldStop = true;
+    try {
+      await _tts.stop();
+    } catch (_) {}
+
+    setState(() {
+      _isSpeaking = false;
+      _highlightTarget = 0;
+    });
   }
 
   Widget buildTutorialCard(
@@ -567,6 +645,37 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget sectionHeader({
+    required String title,
+    required VoidCallback onPressed,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        TextButton(
+          onPressed: onPressed,
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(50, 30),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text(
+            "View All →",
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.deepPurple,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
