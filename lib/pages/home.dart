@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:techgrannyapp/pages/tutorials/video_call_tutorial_page.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onViewAllTutorials;
@@ -20,7 +21,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
   // ---------------- USER DATA ----------------
   String _userName = '';
   bool _loadingName = true;
@@ -299,24 +299,36 @@ class _HomePageState extends State<HomePage> {
                               "assets/images/video.jpg",
                               0.6,
                               Icons.videocam_rounded,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const VideoCallTutorialPage(),
+                                  ),
+                                );
+                              },
                             ),
                             buildTutorialCard(
                               "Pay Using UPI",
                               "assets/images/upi.jpg",
                               0.3,
                               Icons.qr_code_2_rounded,
+                              onTap: () {},
                             ),
                             buildTutorialCard(
                               "Send Photos on WhatsApp",
                               "assets/images/chat.jpg",
                               0.8,
                               Icons.chat_bubble_outline_rounded,
+                              onTap: () {},
                             ),
                             buildTutorialCard(
                               "Book a Doctor Online",
                               "assets/images/doctor.jpg",
                               0.0,
                               Icons.local_hospital_rounded,
+                              onTap: () {},
                             ),
                           ],
                         ),
@@ -434,8 +446,6 @@ class _HomePageState extends State<HomePage> {
       child: child,
     );
   }
-
-  
 
   // ================= OVERLAY =================
   Widget _buildOverlay() {
@@ -556,14 +566,15 @@ class _HomePageState extends State<HomePage> {
     String title,
     String imagePath,
     double progress,
-    IconData icon,
-  ) {
+    IconData icon, {
+    VoidCallback? onTap,
+  }) {
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {},
+        onTap: onTap,
         splashColor: Colors.deepPurple.withOpacity(0.1),
         highlightColor: Colors.deepPurple.withOpacity(0.05),
         child: Container(
