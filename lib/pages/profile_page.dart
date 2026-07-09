@@ -23,7 +23,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _name = '';
   String _phone = '';
-  String _language = 'hi';
   bool _loading = true;
 
   @override

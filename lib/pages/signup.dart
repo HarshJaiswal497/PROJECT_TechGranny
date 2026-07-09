@@ -5,6 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:techgrannyapp/main_shell.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -43,23 +44,39 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   final TextEditingController _otpCtrl = TextEditingController();
   final TextEditingController _nameCtrl = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _initTts();
-    _initSpeech();
+@override
+void initState() {
+  super.initState();
+  _initialize();
+}
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _speakStepInstructions();
-    });
-  }
+Future<void> _initialize() async {
+  await _initTts();
+  await _initSpeech();
+  await loadLanguage();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _speakStepInstructions();
+  });
+}
 
   // ---------------------------
   // INIT TTS + SPEECH
   // ---------------------------
   Future<void> _initTts() async {
+    _tts.setStartHandler(() {
+      print("TTS Started");
+    });
+
+    _tts.setCompletionHandler(() {
+      print("TTS Completed");
+    });
+
+    _tts.setErrorHandler((msg) {
+      print("TTS Error: $msg");
+    });
+
     await _tts.awaitSpeakCompletion(true);
-    await _tts.setLanguage("hi-IN");
     await _tts.setSpeechRate(0.5);
     await _tts.setVolume(1.0);
     await _tts.setPitch(1.0);
@@ -68,6 +85,17 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   Future<void> _initSpeech() async {
     _speech = stt.SpeechToText();
     _speechAvailable = await _speech.initialize();
+  }
+  Future<void> loadLanguage() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    language = prefs.getString("language") ?? "hi";
+    print("Signup Language : $language");
+    if (language == "hi") {
+      await _tts.setLanguage("hi-IN");
+    } else {
+      await _tts.setLanguage("en-US");
+    }
   }
 
   // ---------------------------
@@ -87,30 +115,58 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
     try {
       if (_step == 1) {
         setState(() => _highlightTarget = 1); // 🔵 phone field
-        await _tts.speak("नमस्ते! सबसे पहले अपना मोबाइल नंबर दर्ज करें।");
+        if (language == "hi") {
+          await _tts.speak("नमस्ते! सबसे पहले अपना मोबाइल नंबर दर्ज करें।");
+        } else {
+          await _tts.speak("Welcome. Please enter your mobile number.");
+        }
         if (abort()) return;
 
         setState(() => _highlightTarget = 2); // 🔵 continue button
-        await _tts.speak("फिर नीचे कंटिन्यू बटन दबाएँ।");
+        if (language == "hi") {
+          await _tts.speak("फिर नीचे कंटिन्यू बटन दबाएँ।");
+        } else {
+          await _tts.speak("Then press the Continue button.");
+        }
       }
 
       if (_step == 2) {
         setState(() => _highlightTarget = 1); // 🔵 otp field
-        await _tts.speak("आपके मोबाइल नंबर पर एक ओटीपी भेजा गया है।");
+        if (language == "hi") {
+          await _tts.speak("आपके मोबाइल नंबर पर एक ओटीपी भेजा गया है।");
+        } else {
+          await _tts.speak("An OTP has been sent to your mobile number.");
+        }
         if (abort()) return;
 
-        await _tts.speak("कृपया ओटीपी दर्ज करें।");
+        if (language == "hi") {
+          await _tts.speak("कृपया ओटीपी दर्ज करें।");
+        } else {
+          await _tts.speak("Please enter the OTP.");
+        }
         setState(() => _highlightTarget = 2); // 🔵 verify button
-        await _tts.speak("फिर वेरिफ़ाई बटन दबाएँ।");
+        if (language == "hi") {
+          await _tts.speak("फिर वेरिफ़ाई बटन दबाएँ।");
+        } else {
+          await _tts.speak("Then press the Verify button.");
+        }
       }
 
       if (_step == 3) {
         setState(() => _highlightTarget = 1); // 🔵 name field
-        await _tts.speak("अब अपना पूरा नाम बोलें या टाइप करें।");
+        if (language == "hi") {
+          await _tts.speak("अब अपना पूरा नाम बोलें या टाइप करें।");
+        } else {
+          await _tts.speak("Please speak or type your full name.");
+        }
         if (abort()) return;
 
         setState(() => _highlightTarget = 2); // 🔵 continue button
-        await _tts.speak("फिर कंटिन्यू दबाएँ ताकि आपका अकाउंट बन सके।");
+        if (language == "hi") {
+          await _tts.speak("फिर कंटिन्यू दबाएँ ताकि आपका अकाउंट बन सके।");
+        } else {
+          await _tts.speak("Then press Continue to create your account.");
+        }
       }
     } catch (_) {}
 

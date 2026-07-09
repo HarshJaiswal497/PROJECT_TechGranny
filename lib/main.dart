@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:techgrannyapp/pages/welcome.dart';
+import 'package:provider/provider.dart';
 
-// Import your generated firebase options file
+import 'localization/language_provider.dart';
+import 'pages/language_selection_page.dart';
+import 'services/tts_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  // Initialize TTS
+  await TTSService.initialize();
+
+  // Load saved language
+  final languageProvider = LanguageProvider();
+  await languageProvider.loadLanguage();
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => languageProvider,
+      child: const MyApp(),
+    ),
   );
-
-  runApp(const MyApp());
-}
-
-class DefaultFirebaseOptions {
-  static FirebaseOptions? get currentPlatform => null;
 }
 
 class MyApp extends StatelessWidget {
@@ -24,14 +28,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TechGranny App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const WelcomePage(),
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'TechGranny',
+
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.deepPurple,
+            ),
+            useMaterial3: true,
+          ),
+
+          home: const LanguageSelectionPage(),
+        );
+      },
     );
   }
 }

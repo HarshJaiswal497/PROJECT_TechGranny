@@ -1,7 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:provider/provider.dart';
+
+import '../localization/app_localization.dart';
+import '../localization/language_provider.dart';
+import '../services/preference_service.dart';
+import '../services/tts_service.dart';
 import 'package:techgrannyapp/pages/login.dart';
 import 'package:techgrannyapp/pages/signup.dart';
 
@@ -14,7 +19,6 @@ class WelcomePage extends StatefulWidget {
 
 class _WelcomePageState extends State<WelcomePage>
     with TickerProviderStateMixin {
-  late FlutterTts flutterTts;
   int _currentStep = 0;
   bool _isSpeaking = false;
 
@@ -25,25 +29,29 @@ class _WelcomePageState extends State<WelcomePage>
   late AnimationController signupGlowController;
   late AnimationController voiceGlowController;
 
-  @override
-  void initState() {
-    super.initState();
-    _initTts();
-    _initAnimations();
+@override
+void initState() {
+  super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _speakInstructionsSequence();
-    });
-  }
+  _initAnimations();
 
-  Future<void> _initTts() async {
-    flutterTts = FlutterTts();
-    await flutterTts.awaitSpeakCompletion(true);
-    await flutterTts.setLanguage("hi-IN");
-    await flutterTts.setSpeechRate(0.5);
-    await flutterTts.setVolume(1.0);
-    await flutterTts.setPitch(1.0);
-  }
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    final provider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+
+    await provider.loadLanguage();
+
+    await TTSService.setLanguage(
+      provider.language,
+    );
+
+    _speakInstructionsSequence();
+  });
+}
+
+
 
   void _initAnimations() {
     loginGlowController = AnimationController(
@@ -62,98 +70,62 @@ class _WelcomePageState extends State<WelcomePage>
     );
   }
 
-  Future<void> _speakInstructionsSequence() async {
-    // avoid re-entrancy if a sequence is already running
-    if (_isSpeaking) return;
+Future<void> _speakInstructionsSequence() async {
 
-    // Clear any previous stop request and mark speaking
-    _shouldStop = false;
-    setState(() {
-      _isSpeaking = true;
-    });
+  if (_isSpeaking) return;
 
-    try {
-      // helper that checks whether we should abort
-      bool shouldAbort() => _shouldStop;
+  _shouldStop = false;
 
-      setState(() => _currentStep = 3);
+  setState(() {
+    _isSpeaking = true;
+  });
 
-      await flutterTts.awaitSpeakCompletion(true);
-      if (shouldAbort()) return;
+  try {
 
-      await flutterTts.speak("नमस्ते! टेकग्रैनी में आपका स्वागत है।");
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (shouldAbort()) return;
+    await TTSService.speak(
+      AppLocalization.tts(
+        "welcome",
+        "welcomeMessage",
+      ),
+    );
 
-      await flutterTts.speak(
-        "यह ऐप आपको मोबाइल और इंटरनेट की दुनिया को बिना डर के समझने और इस्तेमाल करने में मदद करेगा।",
-      );
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (shouldAbort()) return;
-      await flutterTts.speak("हम हर कदम पर आपके साथ हैं।");
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (shouldAbort()) return;
+    if (_shouldStop) return;
 
-      await flutterTts.speak(
-        "टॉप पर वॉइस आइकॉन को टैप करें यदि आप निर्देश दोबारा सुनना चाहते हैं।",
-      );
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (shouldAbort()) return;
+    await TTSService.speak(
+      AppLocalization.tts(
+        "welcome",
+        "appIntroduction",
+      ),
+    );
 
-      setState(() => _currentStep = 1);
-      await flutterTts.speak("यह लॉगिन बटन है।");
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (shouldAbort()) return;
+    if (_shouldStop) return;
 
-      await flutterTts.speak("यदि आपके पास पहले से अकाउंट है तो इसे टैप करें।");
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (shouldAbort()) return;
+    await TTSService.speak(
+      AppLocalization.tts(
+        "welcome",
+        "loginInstruction",
+      ),
+    );
 
-      setState(() => _currentStep = 2);
-      await flutterTts.speak("यह साइन अप बटन है।");
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (shouldAbort()) return;
+    if (_shouldStop) return;
 
-      await flutterTts.speak(
-        "यदि आप नए उपयोगकर्ता हैं तो इसे टैप करके अकाउंट बनाएं।",
-      );
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (shouldAbort()) return;
+    await TTSService.speak(
+      AppLocalization.tts(
+        "welcome",
+        "signupInstruction",
+      ),
+    );
 
-      // NEW: highlight and mention the Skip button location
-      setState(() => _currentStep = 4);
-      await flutterTts.speak(
-        "यदि आप निर्देश रोकना चाहते हैं, तो नीचे दाईं ओर ‘स्किप’ बटन दबाएँ।",
-      );
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (shouldAbort()) return;
+  } finally {
 
-      setState(() => _currentStep = 3);
-      await flutterTts.speak(
-        "निर्देश दोबारा सुनने के लिए ऊपर वॉइस आइकॉन को टैप करें।",
-      );
-
-      // finished normally
+    if (mounted) {
       setState(() {
-        _currentStep = 0;
-      });
-    } catch (e) {
-      debugPrint("TTS Error: $e");
-    } finally {
-      // Always clear speaking state and reset the stop flag for future runs
-      if (mounted) {
-        setState(() {
-          _isSpeaking = false;
-          _shouldStop = false;
-          _currentStep = 0;
-        });
-      } else {
         _isSpeaking = false;
         _shouldStop = false;
-        _currentStep = 0;
-      }
+      });
     }
   }
+}
 
   Future<void> _skipSpeaking() async {
     // Request the running sequence to stop ASAP
@@ -161,7 +133,7 @@ class _WelcomePageState extends State<WelcomePage>
 
     try {
       // Ask the TTS engine to stop speaking immediately and await it.
-      await flutterTts.stop();
+      await TTSService.stop();
     } catch (e) {
       debugPrint("Error stopping TTS: $e");
     }
@@ -181,7 +153,7 @@ class _WelcomePageState extends State<WelcomePage>
   @override
   void dispose() {
     try {
-      flutterTts.stop();
+      TTSService.stop();
     } catch (_) {}
     loginGlowController.dispose();
     signupGlowController.dispose();
@@ -305,7 +277,7 @@ class _WelcomePageState extends State<WelcomePage>
                                 // If currently speaking, stop and restart.
                                 if (_isSpeaking) {
                                   try {
-                                    await flutterTts.stop();
+                                    await TTSService.stop();
                                   } catch (_) {}
                                   await Future.delayed(
                                     const Duration(milliseconds: 150),
@@ -374,8 +346,11 @@ class _WelcomePageState extends State<WelcomePage>
                             size: 18,
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Hindi voice support available',
+                          Text(
+                            AppLocalization.ui(
+                              "welcome",
+                              "voiceSupport",
+                            ),
                             style: TextStyle(
                               fontFamily: 'OpenSans',
                               fontSize: 13,
@@ -388,7 +363,10 @@ class _WelcomePageState extends State<WelcomePage>
                     ),
                     const SizedBox(height: 28),
                     Text(
-                      'Welcome to TechGranny',
+                      AppLocalization.ui(
+                        "welcome",
+                        "title",
+                      ),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Pacifico',
@@ -406,7 +384,10 @@ class _WelcomePageState extends State<WelcomePage>
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Your friendly guide to the digital world.',
+                      AppLocalization.ui(
+                        "welcome",
+                        "subtitle",
+                      ),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'OpenSans',
@@ -446,15 +427,14 @@ class _WelcomePageState extends State<WelcomePage>
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) =>
-                                              const LogInPage(),
+                                          builder: (_) => const LoginPage(),
                                         ),
                                       );
                                     },
                               style: _loginButtonStyle(),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
+                                children: [
                                   Icon(
                                     Icons.login,
                                     color: Colors.white,
@@ -462,7 +442,10 @@ class _WelcomePageState extends State<WelcomePage>
                                   ),
                                   SizedBox(width: 8),
                                   Text(
-                                    'Login',
+                                    AppLocalization.ui(
+                                      "welcome",
+                                      "loginButton",
+                                    ),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -502,15 +485,14 @@ class _WelcomePageState extends State<WelcomePage>
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) =>
-                                              const SignUpPage(),
+                                          builder: (_) => const SignupPage(),
                                         ),
                                       );
                                     },
                               style: _signupButtonStyle(),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
+                                children: [
                                   Icon(
                                     Icons.person_add,
                                     color: Colors.white,
@@ -518,7 +500,10 @@ class _WelcomePageState extends State<WelcomePage>
                                   ),
                                   SizedBox(width: 8),
                                   Text(
-                                    'Sign Up',
+                                    AppLocalization.ui(
+                                      "welcome",
+                                      "signupButton",
+                                    ),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -587,8 +572,11 @@ class _WelcomePageState extends State<WelcomePage>
                             ),
                             elevation: 4,
                           ),
-                          child: Text(
-                            'Skip',
+                          Text(
+                            AppLocalization.ui(
+                              "welcome",
+                              "skipVoice",
+                            ),
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 14,

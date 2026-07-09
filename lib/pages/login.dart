@@ -1,7 +1,10 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:provider/provider.dart';
+
+import '../services/tts_service.dart';
+import '../localization/language_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:techgrannyapp/main_shell.dart';
@@ -18,7 +21,7 @@ class _LogInPageState extends State<LogInPage> {
   int _step = 1; // 1 = phone, 2 = otp
   int _highlightTarget = 0; // 1=field, 2=button, 3=voice
 
-  final FlutterTts _tts = FlutterTts();
+
   late stt.SpeechToText _speech;
 
   bool _isSpeaking = false;
@@ -38,19 +41,25 @@ class _LogInPageState extends State<LogInPage> {
   @override
   void initState() {
     super.initState();
-    _initTts();
     _initSpeech();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+
+      final provider = Provider.of<LanguageProvider>(
+        context,
+        listen: false,
+      );
+
+      await provider.loadLanguage();
+
+      await TTSService.setLanguage(
+        provider.language,
+      );
+
       _speakLoginInstructions();
     });
   }
 
-  Future<void> _initTts() async {
-    await _tts.awaitSpeakCompletion(true);
-    await _tts.setLanguage("hi-IN");
-    await _tts.setSpeechRate(0.5);
-  }
 
   Future<void> _initSpeech() async {
     _speech = stt.SpeechToText();
@@ -72,20 +81,36 @@ class _LogInPageState extends State<LogInPage> {
     try {
       if (_step == 1) {
         setState(() => _highlightTarget = 1);
-        await _tts.speak("लॉगिन करने के लिए अपना मोबाइल नंबर दर्ज करें।");
+        if (widget.language == "hi") {
+          await _tts.speak("लॉगिन करने के लिए अपना मोबाइल नंबर दर्ज करें।");
+        } else {
+          await _tts.speak("Please enter your mobile number.");
+        }
         if (abort()) return;
 
         setState(() => _highlightTarget = 2);
-        await _tts.speak("फिर नीचे कंटिन्यू बटन दबाएँ।");
+        if (widget.language == "hi") {
+          await _tts.speak("फिर नीचे कंटिन्यू बटन दबाएँ।");
+        } else {
+          await _tts.speak("Then press the Continue button.");
+        }
       }
 
       if (_step == 2) {
         setState(() => _highlightTarget = 1);
-        await _tts.speak("अब ओटीपी दर्ज करें।");
+        if (widget.language == "hi") {
+          await _tts.speak("अब ओटीपी दर्ज करें।");
+        } else {
+          await _tts.speak("Now enter the OTP.");
+        }
         if (abort()) return;
 
         setState(() => _highlightTarget = 2);
-        await _tts.speak("फिर वेरिफ़ाई बटन दबाएँ।");
+        if (widget.language == "hi") {
+          await _tts.speak("फिर वेरिफ़ाई बटन दबाएँ।");
+        } else {
+          await _tts.speak("Then press the Verify button.");
+        }
       }
     } catch (_) {}
 
@@ -165,7 +190,11 @@ class _LogInPageState extends State<LogInPage> {
   // ---------------- FIREBASE ----------------
   Future<void> _sendOtp() async {
     if (_phoneCtrl.text.length != 10) {
-      await _tts.speak("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।");
+      if (widget.language == "hi") {
+        await _tts.speak("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।");
+      } else {
+        await _tts.speak("Please enter a valid ten digit mobile number.");
+      }
       return;
     }
 
@@ -197,7 +226,11 @@ class _LogInPageState extends State<LogInPage> {
         MaterialPageRoute(builder: (_) => const MainShell()),
       );
     } catch (_) {
-      await _tts.speak("ओटीपी गलत है।");
+      if (widget.language == "hi") {
+        await _tts.speak("ओटीपी गलत है।");
+      } else {
+        await _tts.speak("The OTP is incorrect.");
+      }
     }
   }
 
