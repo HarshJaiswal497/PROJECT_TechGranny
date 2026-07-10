@@ -4,8 +4,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import '../services/tts_service.dart';
+import '../localization/app_localization.dart';
+import '../localization/language_manager.dart';
 import 'package:techgrannyapp/pages/tutorials/video_call_tutorial_page.dart';
+import 'package:techgrannyapp/pages/tutorials/pay_via_upi_tutorial_page.dart';
+import 'package:techgrannyapp/pages/tutorials/send_photos_tutorial_page.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onViewAllTutorials;
@@ -26,7 +30,7 @@ class _HomePageState extends State<HomePage> {
   bool _loadingName = true;
 
   // ---------------- VOICE / OVERLAY ----------------
-  final FlutterTts _tts = FlutterTts();
+
   bool _isSpeaking = false;
   bool _shouldStop = false;
 
@@ -43,19 +47,18 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _fetchUserName();
-    _initTts();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _speakHomeInstructions();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await TTSService.initialize();
+
+      await TTSService.setLanguage(
+        LanguageManager.currentLanguage,
+      );
+
+      await _speakHomeInstructions();
     });
   }
 
-  Future<void> _initTts() async {
-    await _tts.awaitSpeakCompletion(true);
-    await _tts.setLanguage("hi-IN");
-    await _tts.setSpeechRate(0.45);
-    await _tts.setVolume(1.0);
-  }
 
   Future<void> _fetchUserName() async {
     try {
@@ -146,19 +149,22 @@ class _HomePageState extends State<HomePage> {
                                       children: [
                                         Text(
                                           _loadingName
-                                              ? "Hi 👋"
+                                              ? AppLocalization.ui("home", "greeting")
                                               : _userName.isNotEmpty
-                                              ? "Hi, $_userName Ji 👋"
-                                              : "Hi 👋",
+                                                  ? "${AppLocalization.ui("home", "greetingWithName")} $_userName 👋"
+                                                  : AppLocalization.ui("home", "greeting"),
                                           style: const TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.black87,
                                           ),
                                         ),
-                                        const Text(
-                                          "Welcome back!",
-                                          style: TextStyle(
+                                        Text(
+                                          AppLocalization.ui(
+                                            "home",
+                                            "welcomeBack",
+                                          ),
+                                          style: const  TextStyle(
                                             fontSize: 14,
                                             color: Colors.black54,
                                           ),
@@ -170,8 +176,9 @@ class _HomePageState extends State<HomePage> {
                                   // 🔊 VOICE REPLAY ICON
                                   GestureDetector(
                                     onTap: () async {
-                                      await _tts.stop();
-                                      _speakHomeInstructions();
+                                      await TTSService.stop();
+
+                                      await _speakHomeInstructions();
                                     },
                                     child: const CircleAvatar(
                                       backgroundColor: Colors.deepPurple,
@@ -219,18 +226,24 @@ class _HomePageState extends State<HomePage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      "Continue Learning",
-                                      style: TextStyle(
+                                    Text(
+                                      AppLocalization.ui(
+                                        "home",
+                                        "continueLearningTitle",
+                                      ),
+                                      style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    const Text(
-                                      "WhatsApp – Step 3 of 10",
+                                    Text(
+                                      AppLocalization.ui(
+                                        "home",
+                                        "continueLearningSubtitle",
+                                      ),
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.black54,
                                         fontSize: 13,
                                       ),
@@ -259,9 +272,12 @@ class _HomePageState extends State<HomePage> {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                child: const Text(
-                                  "Resume",
-                                  style: TextStyle(color: Colors.white),
+                                child: Text(
+                                         AppLocalization.ui(
+                                           "home",
+                                           "resume",
+                                         ),
+                                  style: const TextStyle(color: Colors.white),
                                 ),
                               ),
                             ],
@@ -278,7 +294,10 @@ class _HomePageState extends State<HomePage> {
                       child: _highlightWrapper(
                         active: _highlightTarget == 3,
                         child: sectionHeader(
-                          title: "Explore Tutorials",
+                          title: AppLocalization.ui(
+                            "home",
+                            "exploreTutorials",
+                          ),
                           onPressed: widget.onViewAllTutorials,
                         ),
                       ),
@@ -295,7 +314,10 @@ class _HomePageState extends State<HomePage> {
                           padding: const EdgeInsets.only(left: 16),
                           children: [
                             buildTutorialCard(
-                              "Make a Video Call",
+                              AppLocalization.ui(
+                                "home",
+                                "videoCallTutorial",
+                              ),
                               "assets/images/video.jpg",
                               0.6,
                               Icons.videocam_rounded,
@@ -310,21 +332,44 @@ class _HomePageState extends State<HomePage> {
                               },
                             ),
                             buildTutorialCard(
-                              "Pay Using UPI",
+                              AppLocalization.ui(
+                                "home",
+                                "upiTutorial",
+                              ),
                               "assets/images/upi.jpg",
                               0.3,
                               Icons.qr_code_2_rounded,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const PayViaUpiTutorialPage(),
+                                  ),
+                                );
+                              },
                             ),
                             buildTutorialCard(
-                              "Send Photos on WhatsApp",
+                              AppLocalization.ui(
+                                "home",
+                                "whatsappTutorial",
+                              ),
                               "assets/images/chat.jpg",
                               0.8,
                               Icons.chat_bubble_outline_rounded,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const SendPhotosTutorialPage(),
+                                  ),
+                                );
+                              },
                             ),
                             buildTutorialCard(
-                              "Book a Doctor Online",
+                              AppLocalization.ui(
+                                "home",
+                                "doctorTutorial",
+                              ),
                               "assets/images/doctor.jpg",
                               0.0,
                               Icons.local_hospital_rounded,
@@ -346,7 +391,10 @@ class _HomePageState extends State<HomePage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             sectionHeader(
-                              title: "Book an Appointment",
+                              title: AppLocalization.ui(
+                                "home",
+                                "bookAppointment",
+                              ),
                               onPressed: widget.onViewAllAppointments,
                             ),
                             const SizedBox(height: 10),
@@ -375,22 +423,28 @@ class _HomePageState extends State<HomePage> {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  const Expanded(
+                                  Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "Need more help?",
-                                          style: TextStyle(
+                                          AppLocalization.ui(
+                                            "home",
+                                            "needHelp",
+                                          ),
+                                          style: const TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        SizedBox(height: 4),
+                                        const SizedBox(height: 4),
                                         Text(
-                                          "Book an online session with a Tech Mentor via video call.",
-                                          style: TextStyle(
+                                          AppLocalization.ui(
+                                            "home",
+                                            "appointmentDescription",
+                                          ),
+                                          style: const TextStyle(
                                             fontSize: 13,
                                             color: Colors.black87,
                                           ),
@@ -403,10 +457,15 @@ class _HomePageState extends State<HomePage> {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.deepPurple,
                                     ),
-                                    child: const Text(
-                                      "Book",
-                                      style: TextStyle(color: Colors.white),
-                                    ),
+                                    child: Text(
+                                     AppLocalization.ui(
+                                       "home",
+                                       "book",
+                                     ),
+                                     style: const TextStyle(
+                                       color: Colors.white,
+                                     ),
+                                   ),
                                   ),
                                 ],
                               ),
@@ -468,9 +527,12 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                "Skip",
-                style: TextStyle(
+              child:  Text(
+                AppLocalization.ui(
+                  "home",
+                  "skip",
+                ),
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -487,79 +549,127 @@ class _HomePageState extends State<HomePage> {
     if (_isSpeaking) return;
 
     _shouldStop = false;
+
     setState(() {
       _isSpeaking = true;
       _highlightTarget = 1;
     });
 
-    bool abort() => _shouldStop;
-
     try {
-      final name = _userName.isNotEmpty ? _userName : "जी";
-
-      await _tts.speak(
-        "नमस्ते $name! टेकग्रैनी में आपका बहुत बहुत स्वागत है। "
-        "यहाँ आप मोबाइल और इंटरनेट को आसान तरीके से सीख सकती हैं।",
+      // Header
+      await TTSService.speak(
+        AppLocalization.tts(
+          "home",
+          "headerIntro",
+        ),
       );
-      if (abort()) return;
 
-      setState(() => _highlightTarget = 2);
-      await _tts.speak(
-        "यहाँ आप अपनी पढ़ाई वहीं से शुरू कर सकती हैं, "
-        "जहाँ आपने पिछली बार छोड़ा था। "
-        "रिज़्यूम बटन दबाकर आप आगे सीख सकती हैं।",
+      if (_shouldStop) return;
+
+      // Continue Learning
+      if (mounted) {
+        setState(() {
+          _highlightTarget = 2;
+        });
+      }
+
+      await TTSService.speak(
+        AppLocalization.tts(
+          "home",
+          "continueLearning",
+        ),
       );
-      if (abort()) return;
 
-      setState(() => _highlightTarget = 3);
-      await _tts.speak(
-        "इस सेक्शन में छोटे छोटे ट्यूटोरियल हैं। "
-        "जैसे वीडियो कॉल करना, यूपीआई से पेमेंट करना, "
-        "या व्हाट्सएप इस्तेमाल करना। "
-        "किसी भी कार्ड को टैप करके सीखना शुरू करें।",
+      if (_shouldStop) return;
+
+      // Tutorials
+      if (mounted) {
+        setState(() {
+          _highlightTarget = 3;
+        });
+      }
+
+      await TTSService.speak(
+        AppLocalization.tts(
+          "home",
+          "tutorials",
+        ),
       );
-      if (abort()) return;
 
-      setState(() => _highlightTarget = 4);
-      await _tts.speak(
-        "अगर आपको कहीं भी दिक्कत हो, "
-        "तो यहाँ से आप टेक मेंटर के साथ वीडियो कॉल बुक कर सकती हैं। "
-        "वे आपकी मदद करेंगे।",
+      if (_shouldStop) return;
+
+      // Appointment
+      if (mounted) {
+        setState(() {
+          _highlightTarget = 4;
+        });
+      }
+
+      await TTSService.speak(
+        AppLocalization.tts(
+          "home",
+          "appointments",
+        ),
       );
-      if (abort()) return;
 
-      setState(() => _highlightTarget = 5);
-      await _tts.speak(
-        "नीचे नेविगेशन बार से आप होम, लर्न, अपॉइंटमेंट "
-        "और प्रोफाइल सेक्शन में जा सकती हैं।",
+      if (_shouldStop) return;
+
+      // Bottom Navigation
+//       if (mounted) {
+//         setState(() {
+//           _highlightTarget = 5;
+//         });
+//       }
+//
+//       await TTSService.speak(
+//         AppLocalization.tts(
+//           "home",
+//           "bottomNavigation",
+//         ),
+//       );
+//
+//       if (_shouldStop) return;
+
+      // Replay
+      if (mounted) {
+        setState(() {
+          _highlightTarget = 1;
+        });
+      }
+
+      await TTSService.speak(
+        AppLocalization.tts(
+          "home",
+          "replayInstruction",
+        ),
       );
-      if (abort()) return;
-
-      setState(() => _highlightTarget = 1);
-      await _tts.speak(
-        "निर्देश दोबारा सुनने के लिए "
-        "ऊपर वॉइस आइकन को टैप करें। "
-        "हम हर कदम पर आपके साथ हैं।",
-      );
-    } catch (_) {}
-
-    setState(() {
-      _isSpeaking = false;
-      _highlightTarget = 0;
-      _shouldStop = false;
-    });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _highlightTarget = 0;
+          _shouldStop = false;
+        });
+      }
+    }
   }
-
   Future<void> _stopSpeaking() async {
     _shouldStop = true;
-    try {
-      await _tts.stop();
-    } catch (_) {}
 
-    setState(() {
-      _isSpeaking = false;
-      _highlightTarget = 0;
-    });
+    await TTSService.stop();
+
+    if (mounted) {
+      setState(() {
+        _isSpeaking = false;
+        _highlightTarget = 0;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    TTSService.stop();
+    super.dispose();
   }
 
   Widget buildTutorialCard(
@@ -643,7 +753,10 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "${(progress * 100).round()}% done",
+                      "${(progress * 100).round()}${AppLocalization.ui(
+                        "home",
+                        "progressDone",
+                      )}",
                       style: const TextStyle(
                         fontSize: 12,
                         color: Colors.black54,
@@ -677,9 +790,12 @@ class _HomePageState extends State<HomePage> {
             minimumSize: const Size(50, 30),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text(
-            "View All →",
-            style: TextStyle(
+          child: Text(
+                   AppLocalization.ui(
+                     "home",
+                     "viewAll",
+                   ),
+            style: const TextStyle(
               fontSize: 13,
               color: Colors.deepPurple,
               fontWeight: FontWeight.w600,

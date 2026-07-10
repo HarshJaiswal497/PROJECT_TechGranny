@@ -1,55 +1,50 @@
 const Map<String, dynamic> videoCall = {
   "ui": {
-    "title": "Video Call Tutorial",
+    "step": "Step",
+    "of": "of",
 
     "repeat": "Repeat",
-
     "next": "Next",
-
     "finish": "Finish",
-
-    "exit": "Exit Tutorial",
-
+    "exitTutorial": "Exit Tutorial",
     "skipVoice": "Skip Voice",
 
-    "step": "Step",
+    "step1Title": "Open WhatsApp",
+    "step2Title": "Find the Contact",
+    "step3Title": "Open Chat",
+    "step4Title": "Tap Video Call",
+    "step5Title": "Success",
 
-    "of": "of"
+    "step1Instruction":
+        "First, open the WhatsApp application.",
+
+    "step2Instruction":
+        "If your contact is visible in the contact list, tap on the name. Otherwise, press the search button at the top and search for the contact.",
+
+    "step3Instruction":
+        "Now tap on the person's name to open the chat.",
+
+    "step4Instruction":
+        "Now press the video camera icon at the top.",
+
+    "step5Instruction":
+        "Congratulations! Your video call has started. You have learned how to make a video call."
   },
 
   "tts": {
-    "intro":
-        "Welcome to the Video Call Tutorial. Follow each step carefully.",
+    "step1Instruction":
+        "First, open the WhatsApp application.",
 
-    "completed":
-        "Congratulations. You have completed this tutorial."
-  },
+    "step2Instruction":
+        "If your contact is visible in the contact list, tap on the name. Otherwise, use the search button to find the contact.",
 
-  "steps": [
-    {
-      "title": "Open WhatsApp",
-      "instruction":
-          "First, open the WhatsApp application."
-    },
-    {
-      "title": "Find Contact",
-      "instruction":
-          "Find the contact you want to call. You can also use the search button."
-    },
-    {
-      "title": "Open Chat",
-      "instruction":
-          "Tap the person's name to open the chat."
-    },
-    {
-      "title": "Tap Video Call",
-      "instruction":
-          "Tap the video camera icon at the top."
-    },
-    {
-      "title": "Success",
-      "instruction":
-          "Congratulations. Your video call has started successfully."
-    }
-  ]
+    "step3Instruction":
+        "Now tap on the person's name to open the chat.",
+
+    "step4Instruction":
+        "Press the video camera icon at the top.",
+
+    "step5Instruction":
+        "Congratulations! Your video call has started. You have successfully learned how to make a video call."
+  }
 };

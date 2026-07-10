@@ -55,7 +55,10 @@ class TTSService {
       await _tts.setLanguage("hi-IN");
     }
   }
-
+  static Future<void> setLanguage(String language) async {
+    LanguageManager.setLanguage(language);
+    await _updateLanguage();
+  }
   static Future<void> speak(String text) async {
     if (text.trim().isEmpty) return;
 

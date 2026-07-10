@@ -1,54 +1,50 @@
 const Map<String, dynamic> home = {
   "ui": {
-    "greeting": "Hi",
+    "greeting": "Hi 👋",
+    "greetingWithName": "Hi,",
+    "progressDone": "% done",
+
     "welcomeBack": "Welcome back!",
 
-    "continueLearning": "Continue Learning",
+    "continueLearningTitle": "Continue Learning",
+    "continueLearningSubtitle": "WhatsApp – Step 3 of 10",
     "resume": "Resume",
 
     "exploreTutorials": "Explore Tutorials",
 
-    "makeVideoCall": "Make a Video Call",
-    "payUsingUPI": "Pay Using UPI",
-    "sendPhotos": "Send Photos on WhatsApp",
-    "bookDoctor": "Book a Doctor Online",
+    "videoCallTutorial": "Make a Video Call",
+    "upiTutorial": "Pay Using UPI",
+    "whatsappTutorial": "Send Photos on WhatsApp",
+    "doctorTutorial": "Book a Doctor Online",
 
     "bookAppointment": "Book an Appointment",
-
     "needHelp": "Need more help?",
-
-    "mentorDescription":
+    "appointmentDescription":
         "Book an online session with a Tech Mentor via video call.",
-
     "book": "Book",
 
-    "viewAll": "View All",
+    "viewAll": "View All →",
 
-    "tutorialProgress":
-        "WhatsApp - Step 3 of 10",
-
-    "done": "done",
-
-    "skip": "Skip",
+    "skip": "Skip"
   },
 
   "tts": {
-    "intro":
-        "Welcome to TechGranny. We are happy to see you again.",
+    "headerIntro":
+        "Welcome to TechGranny. This is your home page.",
 
     "continueLearning":
-        "You can continue learning from where you left off previously.",
+        "You can continue your previous lesson from here by pressing the Resume button.",
 
     "tutorials":
-        "Explore our digital learning tutorials like video calling, UPI payments and WhatsApp.",
+        "This section contains tutorials like video calls, UPI payments and WhatsApp.",
 
-    "appointment":
-        "You can book an online session with a Tech Mentor if you need help.",
+    "appointments":
+        "If you need help, you can book a video session with a Tech Mentor from here.",
 
-    "navigation":
-        "Use the bottom navigation bar to access Home, Learn, Appointments and Profile.",
+    "bottomNavigation":
+        "Use the bottom navigation bar to switch between Home, Learn, Appointments and Profile.",
 
-    "voiceReplay":
-        "Tap the voice icon anytime to hear these instructions again."
+    "replayInstruction":
+        "To hear these instructions again, press the voice button at the top."
   }
 };

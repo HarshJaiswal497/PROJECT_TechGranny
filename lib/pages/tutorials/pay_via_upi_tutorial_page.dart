@@ -1,55 +1,64 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import '../../services/tts_service.dart';
-import '../../localization/app_localization.dart';
 
-class VideoCallTutorialPage extends StatefulWidget {
-  const VideoCallTutorialPage({super.key});
+import '../../localization/app_localization.dart';
+import '../../services/tts_service.dart';
+
+class PayViaUpiTutorialPage extends StatefulWidget {
+  const PayViaUpiTutorialPage({super.key});
 
   @override
-  State<VideoCallTutorialPage> createState() => _VideoCallTutorialPageState();
+  State<PayViaUpiTutorialPage> createState() =>
+      _PayViaUpiTutorialPageState();
 }
 
-class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
-
+class _PayViaUpiTutorialPageState
+    extends State<PayViaUpiTutorialPage> {
 
   int _currentStep = 0;
+
   bool _isSpeaking = false;
-  // ignore: unused_field
+
   bool _shouldStop = false;
 
   final List<_TutorialStep> _steps = [
-    const _TutorialStep(
-      titleKey: "step1Title",
-      instructionKey: "step1Instruction",
-      imagePath: "assets/images/tutorials/whatsapp_open.jpeg",
+    _TutorialStep(
+      titleKey: "upiStep1Title",
+      instructionKey: "upiStep1Instruction",
+      imagePath: "assets/images/tutorials/upi_open_app.jpeg",
     ),
-    const _TutorialStep(
-      titleKey: "step2Title",
-      instructionKey: "step2Instruction",
-      imagePath: "assets/images/tutorials/whatsapp_contacts.jpeg",
+    _TutorialStep(
+      titleKey: "upiStep2Title",
+      instructionKey: "upiStep2Instruction",
+      imagePath: "assets/images/tutorials/upi_scan_qr.jpeg",
     ),
-    const _TutorialStep(
-      titleKey: "step3Title",
-      instructionKey: "step3Instruction",
-      imagePath: "assets/images/tutorials/whatsapp_chat.jpeg",
+    _TutorialStep(
+      titleKey: "upiStep3Title",
+      instructionKey: "upiStep3Instruction",
+      imagePath: "assets/images/tutorials/upi_scan_store_qr.jpeg",
     ),
-    const _TutorialStep(
-      titleKey: "step4Title",
-      instructionKey: "step4Instruction",
-      imagePath: "assets/images/tutorials/whatsapp_video.jpeg",
+    _TutorialStep(
+      titleKey: "upiStep4Title",
+      instructionKey: "upiStep4Instruction",
+      imagePath: "assets/images/tutorials/upi_enter_amount.jpeg",
     ),
-    const _TutorialStep(
-      titleKey: "step5Title",
-      instructionKey: "step5Instruction",
-      imagePath: "assets/images/tutorials/whatsapp_success.jpeg",
+    _TutorialStep(
+      titleKey: "upiStep5Title",
+      instructionKey: "upiStep5Instruction",
+      imagePath: "assets/images/tutorials/upi_enter_pin.jpeg",
+    ),
+    _TutorialStep(
+      titleKey: "upiStep6Title",
+      instructionKey: "upiStep6Instruction",
+      imagePath: "assets/images/tutorials/upi_payment_success.jpeg",
     ),
   ];
 
   @override
   void initState() {
     super.initState();
+
     _initialize();
   }
 
@@ -60,19 +69,27 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
       _speakCurrentStep();
     });
   }
-
-  // ---------------- VOICE ----------------
   Future<void> _speakCurrentStep() async {
-    if (_isSpeaking) return;
+    if (_isSpeaking) {
+      await TTSService.stop();
+
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+        });
+      }
+    }
 
     _shouldStop = false;
 
-    setState(() => _isSpeaking = true);
+    setState(() {
+      _isSpeaking = true;
+    });
 
     try {
       await TTSService.speak(
         AppLocalization.tts(
-          "video_call",
+          "tutorials",
           _steps[_currentStep].instructionKey,
         ),
       );
@@ -98,22 +115,20 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
     }
   }
 
-  Future<void> _nextStep() async {
+  void _nextStep() {
     if (_currentStep < _steps.length - 1) {
       setState(() {
         _currentStep++;
       });
 
-      await _speakCurrentStep();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _speakCurrentStep();
+      });
     } else {
-      await TTSService.stop();
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      Navigator.pop(context);
     }
   }
 
-  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,7 +136,6 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
         children: [
           _buildMainContent(),
 
-          // 🔊 Replay voice
           Positioned(
             top: 40,
             right: 20,
@@ -131,10 +145,7 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
                 size: 36,
                 color: Color(0xFF9B4DFF),
               ),
-              onPressed: () async {
-                await TTSService.stop();
-                _speakCurrentStep();
-              },
+              onPressed: _speakCurrentStep,
             ),
           ),
 
@@ -152,7 +163,7 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
       decoration: const BoxDecoration(
         gradient: SweepGradient(
           center: Alignment.center,
-          startAngle: 0.0,
+          startAngle: 0,
           endAngle: 6.28319,
           colors: [
             Color(0xFFEBD4FF),
@@ -168,37 +179,43 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+
               const SizedBox(height: 30),
 
               Text(
-                "${AppLocalization.ui("video_call", "step")} ${_currentStep + 1} ${AppLocalization.ui("video_call", "of")} ${_steps.length}",
-                style: const TextStyle(fontSize: 14, color: Colors.black54),
+                "${AppLocalization.ui("tutorials", "step")} "
+                "${_currentStep + 1} "
+                "${AppLocalization.ui("tutorials", "of")} "
+                "${_steps.length}",
+                style: const TextStyle(
+                  color: Colors.black54,
+                  fontSize: 14,
+                ),
               ),
 
               const SizedBox(height: 12),
 
               Text(
                 AppLocalization.ui(
-                  "video_call",
+                  "tutorials",
                   step.titleKey,
                 ),
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              // 🔹 BIGGER IMAGE PLACEHOLDER
               Container(
-                height: screenHeight * 0.45, // 👈 FIXED (bigger image)
+                height: screenHeight * 0.42,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withOpacity(.9),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.deepPurple.withOpacity(0.15),
+                      color: Colors.deepPurple.withOpacity(.15),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -209,7 +226,6 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
                   child: Image.asset(
                     step.imagePath,
                     fit: BoxFit.contain,
-                    width: double.infinity,
                   ),
                 ),
               ),
@@ -217,11 +233,14 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
               const SizedBox(height: 20),
 
               Text(
-                AppLocalization.ui(
-                  "video_call",
+                AppLocalization.tts(
+                  "tutorials",
                   step.instructionKey,
                 ),
-                style: const TextStyle(fontSize: 16, height: 1.5),
+                style: const TextStyle(
+                  fontSize: 17,
+                  height: 1.5,
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -232,37 +251,35 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
 
               Row(
                 children: [
+
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () async {
-                        await TTSService.stop();
-                        _speakCurrentStep();
-                      },
+                      onPressed: _speakCurrentStep,
                       child: Text(
                         AppLocalization.ui(
-                          "video_call",
+                          "tutorials",
                           "repeat",
                         ),
                       ),
                     ),
                   ),
+
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () async {
-                        await _nextStep();
-                      },
+                      onPressed: _nextStep,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2FA4FF),
                       ),
                       child: Text(
                         _currentStep == _steps.length - 1
                             ? AppLocalization.ui(
-                                "video_call",
+                                "tutorials",
                                 "finish",
                               )
                             : AppLocalization.ui(
-                                "video_call",
+                                "tutorials",
                                 "next",
                               ),
                         style: const TextStyle(
@@ -280,7 +297,7 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   AppLocalization.ui(
-                    "video_call",
+                    "tutorials",
                     "exitTutorial",
                   ),
                 ),
@@ -295,22 +312,28 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
   Widget _progressDots() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_steps.length, (i) {
-        final active = i <= _currentStep;
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: active ? Colors.deepPurple : Colors.grey[300],
-          ),
-        );
-      }),
+      children: List.generate(
+        _steps.length,
+        (index) {
+          final active = index <= _currentStep;
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: active ? 20 : 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: active
+                  ? const Color(0xFF9B4DFF)
+                  : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(20),
+            ),
+          );
+        },
+      ),
     );
   }
 
-  // OVERLAY
   Widget _buildOverlay() {
     return Positioned.fill(
       child: Container(
@@ -318,32 +341,27 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
         child: Stack(
           children: [
             Positioned(
-              bottom: 110, // 👈 above bottom nav
               right: 20,
-              child: SizedBox(
-                height: 40,
-                child: ElevatedButton(
-                  onPressed: _stopSpeaking,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF9B4DFF),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+              bottom: 110,
+              child: ElevatedButton(
+                onPressed: _stopSpeaking,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF9B4DFF),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 18,
                   ),
-                  child: Text(
-                    AppLocalization.ui(
-                      "video_call",
-                      "skipVoice",
-                    ),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  AppLocalization.ui(
+                    "common",
+                    "skip",
+                  ),
+                  style: const TextStyle(
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -353,19 +371,12 @@ class _VideoCallTutorialPageState extends State<VideoCallTutorialPage> {
       ),
     );
   }
-
   @override
   void dispose() {
     TTSService.stop();
     super.dispose();
   }
-
 }
-
-
-// ---------------- MODEL ----------------
-
-
 class _TutorialStep {
   final String titleKey;
   final String instructionKey;

@@ -2,10 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'login.dart';
+import 'package:techgrannyapp/pages/login.dart';
 import '../localization/app_localization.dart';
 import '../localization/language_provider.dart';
-import '../services/preference_service.dart';
 import '../services/tts_service.dart';
 import 'package:techgrannyapp/pages/login.dart';
 import 'package:techgrannyapp/pages/signup.dart';
@@ -43,11 +43,13 @@ void initState() {
 
     await provider.loadLanguage();
 
+    await TTSService.initialize();
+
     await TTSService.setLanguage(
       provider.language,
     );
 
-    _speakInstructionsSequence();
+    await _speakInstructionsSequence();
   });
 }
 
@@ -71,17 +73,17 @@ void initState() {
   }
 
 Future<void> _speakInstructionsSequence() async {
-
   if (_isSpeaking) return;
 
   _shouldStop = false;
 
   setState(() {
     _isSpeaking = true;
+    _currentStep = 3; // Voice button
   });
 
   try {
-
+    // Voice button
     await TTSService.speak(
       AppLocalization.tts(
         "welcome",
@@ -100,6 +102,13 @@ Future<void> _speakInstructionsSequence() async {
 
     if (_shouldStop) return;
 
+    // Login button
+    if (mounted) {
+      setState(() {
+        _currentStep = 1;
+      });
+    }
+
     await TTSService.speak(
       AppLocalization.tts(
         "welcome",
@@ -109,6 +118,13 @@ Future<void> _speakInstructionsSequence() async {
 
     if (_shouldStop) return;
 
+    // Signup button
+    if (mounted) {
+      setState(() {
+        _currentStep = 2;
+      });
+    }
+
     await TTSService.speak(
       AppLocalization.tts(
         "welcome",
@@ -116,13 +132,31 @@ Future<void> _speakInstructionsSequence() async {
       ),
     );
 
-  } finally {
+    if (_shouldStop) return;
 
+    // Skip button
     if (mounted) {
       setState(() {
-        _isSpeaking = false;
-        _shouldStop = false;
+        _currentStep = 4;
       });
+    }
+
+    await TTSService.speak(
+      AppLocalization.tts(
+        "welcome",
+        "skipInstruction",
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _shouldStop = false;
+        _isSpeaking = false;
+        _currentStep = 0;
+      });
+
+      debugPrint("FINALLY EXECUTED");
+      debugPrint("_isSpeaking = $_isSpeaking");
     }
   }
 }
@@ -141,6 +175,7 @@ Future<void> _speakInstructionsSequence() async {
     // Clear UI speaking state
     if (mounted) {
       setState(() {
+        _shouldStop = true;
         _isSpeaking = false;
         _currentStep = 0;
       });
@@ -152,12 +187,12 @@ Future<void> _speakInstructionsSequence() async {
 
   @override
   void dispose() {
-    try {
-      TTSService.stop();
-    } catch (_) {}
+    TTSService.stop();
+
     loginGlowController.dispose();
     signupGlowController.dispose();
     voiceGlowController.dispose();
+
     super.dispose();
   }
 
@@ -209,7 +244,7 @@ Future<void> _speakInstructionsSequence() async {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isSmall = width < 380;
-
+    debugPrint("BUILD -> _isSpeaking = $_isSpeaking");
     return Scaffold(
       body: Stack(
         children: [
@@ -274,15 +309,17 @@ Future<void> _speakInstructionsSequence() async {
                             ),
                             child: GestureDetector(
                               onTap: () async {
-                                // If currently speaking, stop and restart.
                                 if (_isSpeaking) {
-                                  try {
-                                    await TTSService.stop();
-                                  } catch (_) {}
-                                  await Future.delayed(
-                                    const Duration(milliseconds: 150),
-                                  );
+                                  await TTSService.stop();
                                 }
+
+                                if (mounted) {
+                                  setState(() {
+                                    _shouldStop = false;
+                                    _currentStep = 0;
+                                  });
+                                }
+
                                 await _speakInstructionsSequence();
                               },
                               child: Container(
@@ -351,7 +388,7 @@ Future<void> _speakInstructionsSequence() async {
                               "welcome",
                               "voiceSupport",
                             ),
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontFamily: 'OpenSans',
                               fontSize: 13,
                               color: Color(0xFF6A3BFF),
@@ -389,11 +426,11 @@ Future<void> _speakInstructionsSequence() async {
                         "subtitle",
                       ),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'OpenSans',
-                        fontSize: 15,
-                        color: Colors.black87.withOpacity(0.8),
-                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                        color: Color(0xFF6A3BFF),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 55),
@@ -421,32 +458,33 @@ Future<void> _speakInstructionsSequence() async {
                                   : [],
                             ),
                             child: ElevatedButton(
-                              onPressed: _isSpeaking
-                                  ? null
-                                  : () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const LoginPage(),
-                                        ),
-                                      );
-                                    },
+                              onPressed: () {
+                                debugPrint("Login button pressed");
+                                debugPrint("_isSpeaking = $_isSpeaking");
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LogInPage(),
+                                  ),
+                                );
+                              },
                               style: _loginButtonStyle(),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.login,
                                     color: Colors.white,
                                     size: 22,
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(
                                     AppLocalization.ui(
                                       "welcome",
                                       "loginButton",
                                     ),
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -485,7 +523,7 @@ Future<void> _speakInstructionsSequence() async {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) => const SignupPage(),
+                                          builder: (_) => const SignUpPage(),
                                         ),
                                       );
                                     },
@@ -493,18 +531,18 @@ Future<void> _speakInstructionsSequence() async {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.person_add,
                                     color: Colors.white,
                                     size: 22,
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(
                                     AppLocalization.ui(
                                       "welcome",
                                       "signupButton",
                                     ),
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -572,12 +610,12 @@ Future<void> _speakInstructionsSequence() async {
                             ),
                             elevation: 4,
                           ),
-                          Text(
+                          child: Text(
                             AppLocalization.ui(
                               "welcome",
                               "skipVoice",
                             ),
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,

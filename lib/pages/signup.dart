@@ -1,12 +1,15 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:techgrannyapp/main_shell.dart';
+import '../localization/app_localization.dart';
+import '../services/tts_service.dart';
+import '../localization/language_manager.dart';
+import '../localization/language_provider.dart';
+import 'package:provider/provider.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -24,7 +27,6 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   // 🔵 ADDED: highlight controller
   int _highlightTarget = 0; // 0=none, 1=field, 2=button, 3=voice
 
-  final FlutterTts _tts = FlutterTts();
   late stt.SpeechToText _speech;
 
   bool _isSpeaking = false;
@@ -51,51 +53,31 @@ void initState() {
 }
 
 Future<void> _initialize() async {
-  await _initTts();
-  await _initSpeech();
-  await loadLanguage();
+  await TTSService.initialize();
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
+  await _initSpeech();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    final provider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+
+    await provider.loadLanguage();
+
+    await TTSService.setLanguage(provider.language);
+
     _speakStepInstructions();
   });
 }
-
   // ---------------------------
   // INIT TTS + SPEECH
   // ---------------------------
-  Future<void> _initTts() async {
-    _tts.setStartHandler(() {
-      print("TTS Started");
-    });
 
-    _tts.setCompletionHandler(() {
-      print("TTS Completed");
-    });
-
-    _tts.setErrorHandler((msg) {
-      print("TTS Error: $msg");
-    });
-
-    await _tts.awaitSpeakCompletion(true);
-    await _tts.setSpeechRate(0.5);
-    await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
-  }
 
   Future<void> _initSpeech() async {
     _speech = stt.SpeechToText();
     _speechAvailable = await _speech.initialize();
-  }
-  Future<void> loadLanguage() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    language = prefs.getString("language") ?? "hi";
-    print("Signup Language : $language");
-    if (language == "hi") {
-      await _tts.setLanguage("hi-IN");
-    } else {
-      await _tts.setLanguage("en-US");
-    }
   }
 
   // ---------------------------
@@ -105,89 +87,102 @@ Future<void> _initialize() async {
     if (_isSpeaking) return;
 
     _shouldStop = false;
+
     setState(() {
       _isSpeaking = true;
-      _highlightTarget = 3; // 🔵 voice icon
+      _highlightTarget = 3;
     });
 
     bool abort() => _shouldStop;
 
     try {
       if (_step == 1) {
-        setState(() => _highlightTarget = 1); // 🔵 phone field
-        if (language == "hi") {
-          await _tts.speak("नमस्ते! सबसे पहले अपना मोबाइल नंबर दर्ज करें।");
-        } else {
-          await _tts.speak("Welcome. Please enter your mobile number.");
-        }
+        setState(() => _highlightTarget = 1);
+
+        await TTSService.speak(
+          AppLocalization.tts(
+            "authentication",
+            "enterPhone",
+          ),
+        );
+
         if (abort()) return;
 
-        setState(() => _highlightTarget = 2); // 🔵 continue button
-        if (language == "hi") {
-          await _tts.speak("फिर नीचे कंटिन्यू बटन दबाएँ।");
-        } else {
-          await _tts.speak("Then press the Continue button.");
-        }
+        setState(() => _highlightTarget = 2);
+
+        await TTSService.speak(
+          AppLocalization.tts(
+            "authentication",
+            "continueInstruction",
+          ),
+        );
       }
 
       if (_step == 2) {
-        setState(() => _highlightTarget = 1); // 🔵 otp field
-        if (language == "hi") {
-          await _tts.speak("आपके मोबाइल नंबर पर एक ओटीपी भेजा गया है।");
-        } else {
-          await _tts.speak("An OTP has been sent to your mobile number.");
-        }
+        setState(() => _highlightTarget = 1);
+
+        await TTSService.speak(
+          AppLocalization.tts(
+            "authentication",
+            "enterOtp",
+          ),
+        );
+
         if (abort()) return;
 
-        if (language == "hi") {
-          await _tts.speak("कृपया ओटीपी दर्ज करें।");
-        } else {
-          await _tts.speak("Please enter the OTP.");
-        }
-        setState(() => _highlightTarget = 2); // 🔵 verify button
-        if (language == "hi") {
-          await _tts.speak("फिर वेरिफ़ाई बटन दबाएँ।");
-        } else {
-          await _tts.speak("Then press the Verify button.");
-        }
+        setState(() => _highlightTarget = 2);
+
+        await TTSService.speak(
+          AppLocalization.tts(
+            "authentication",
+            "verifyInstruction",
+          ),
+        );
       }
 
       if (_step == 3) {
-        setState(() => _highlightTarget = 1); // 🔵 name field
-        if (language == "hi") {
-          await _tts.speak("अब अपना पूरा नाम बोलें या टाइप करें।");
-        } else {
-          await _tts.speak("Please speak or type your full name.");
-        }
+        setState(() => _highlightTarget = 1);
+
+        await TTSService.speak(
+          AppLocalization.tts(
+            "authentication",
+            "enterName",
+          ),
+        );
+
         if (abort()) return;
 
-        setState(() => _highlightTarget = 2); // 🔵 continue button
-        if (language == "hi") {
-          await _tts.speak("फिर कंटिन्यू दबाएँ ताकि आपका अकाउंट बन सके।");
-        } else {
-          await _tts.speak("Then press Continue to create your account.");
-        }
-      }
-    } catch (_) {}
+        setState(() => _highlightTarget = 2);
 
-    if (mounted) {
-      setState(() {
-        _isSpeaking = false;
-        _shouldStop = false;
-        _highlightTarget = 0;
-      });
+        await TTSService.speak(
+          AppLocalization.tts(
+            "authentication",
+            "continue",
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _shouldStop = false;
+          _highlightTarget = 0;
+        });
+      }
     }
   }
 
   Future<void> _stopSpeaking() async {
     _shouldStop = true;
-    try {
-      await _tts.stop();
-    } catch (_) {}
-    setState(() {
-      _isSpeaking = false;
-      _highlightTarget = 0;
-    });
+
+    await TTSService.stop();
+
+    if (mounted) {
+      setState(() {
+        _isSpeaking = false;
+        _highlightTarget = 0;
+      });
+    }
   }
 
   // ---------------------------
@@ -295,7 +290,7 @@ Future<void> _initialize() async {
                   color: Color(0xFF9B4DFF),
                 ),
                 onPressed: () async {
-                  await _tts.stop();
+                  await TTSService.stop();
                   _speakStepInstructions();
                 },
               ),
@@ -322,7 +317,10 @@ Future<void> _initialize() async {
                 _highlight(
                   active: _highlightTarget == 1,
                   child: _buildTextField(
-                    label: "Mobile Number",
+                    label: AppLocalization.ui(
+                      "authentication",
+                      "phoneNumber",
+                    ),
                     controller: _phoneCtrl,
                     field: "phone",
                     type: TextInputType.number,
@@ -333,7 +331,10 @@ Future<void> _initialize() async {
                 _highlight(
                   active: _highlightTarget == 1,
                   child: _buildTextField(
-                    label: "OTP",
+                    label: AppLocalization.ui(
+                      "authentication",
+                      "otp",
+                    ),
                     controller: _otpCtrl,
                     field: "otp",
                     type: TextInputType.number,
@@ -344,7 +345,10 @@ Future<void> _initialize() async {
                 _highlight(
                   active: _highlightTarget == 1,
                   child: _buildTextField(
-                    label: "Full Name",
+                    label: AppLocalization.ui(
+                      "authentication",
+                      "name",
+                    ),
                     controller: _nameCtrl,
                     field: "name",
                   ),
@@ -368,7 +372,15 @@ Future<void> _initialize() async {
                     ),
                   ),
                   child: Text(
-                    _step == 2 ? "Verify" : "Continue",
+                    _step == 2
+                        ? AppLocalization.ui(
+                            "authentication",
+                            "verify",
+                          )
+                        : AppLocalization.ui(
+                            "authentication",
+                            "continue",
+                          ),
                     style: const TextStyle(fontSize: 18, color: Colors.white),
                   ),
                 ),
@@ -425,7 +437,15 @@ Future<void> _initialize() async {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFF9B4DFF),
               ),
-              child: const Text("Skip", style: TextStyle(color: Colors.white)),
+              child: Text(
+                       AppLocalization.ui(
+                         "common",
+                         "skip",
+                       ),
+                       style: const TextStyle(
+                         color: Colors.white,
+                       ),
+                     ),
             ),
           ),
         ),
@@ -437,39 +457,79 @@ Future<void> _initialize() async {
   // FIREBASE LOGIC
   // ---------------------------
   Future<void> _sendOtp() async {
+    if (_phoneCtrl.text.length != 10) {
+      await TTSService.speak(
+        AppLocalization.tts(
+          "authentication",
+          "invalidPhoneSpeak",
+        ),
+      );
+      return;
+    }
+
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: "+91${_phoneCtrl.text}",
       verificationCompleted: (_) {},
-      verificationFailed: (_) {},
+      verificationFailed: (e) {
+        setState(() => _error = e.message);
+      },
       codeSent: (id, _) {
         _verificationId = id;
         setState(() => _step = 2);
         _speakStepInstructions();
       },
-      codeAutoRetrievalTimeout: (_) {},
+      codeAutoRetrievalTimeout: (id) {
+        _verificationId = id;
+      },
     );
   }
 
   Future<void> _verifyOtp() async {
-    final cred = PhoneAuthProvider.credential(
-      verificationId: _verificationId,
-      smsCode: _otpCtrl.text,
-    );
-    await FirebaseAuth.instance.signInWithCredential(cred);
-    setState(() => _step = 3);
-    _speakStepInstructions();
+    try {
+      final cred = PhoneAuthProvider.credential(
+        verificationId: _verificationId,
+        smsCode: _otpCtrl.text,
+      );
+  
+      await FirebaseAuth.instance.signInWithCredential(cred);
+  
+      setState(() => _step = 3);
+  
+      _speakStepInstructions();
+    } catch (_) {
+      await TTSService.speak(
+        AppLocalization.tts(
+          "authentication",
+          "invalidOtp",
+        ),
+      );
+    }
   }
 
   Future<void> _submitName() async {
     final user = FirebaseAuth.instance.currentUser!;
-    await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .set({
       "name": _nameCtrl.text,
       "phone": user.phoneNumber,
+      "languagePreference": LanguageManager.currentLanguage,
     });
 
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const MainShell()),
     );
+  }
+  @override
+  void dispose() {
+    _phoneCtrl.dispose();
+    _otpCtrl.dispose();
+    _nameCtrl.dispose();
+
+    _speech.stop();
+
+    super.dispose();
   }
 }

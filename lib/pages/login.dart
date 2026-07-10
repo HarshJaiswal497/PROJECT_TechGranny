@@ -1,13 +1,13 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
+import '../localization/app_localization.dart';
 import '../services/tts_service.dart';
 import '../localization/language_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:techgrannyapp/main_shell.dart';
+import 'package:provider/provider.dart';
 
 class LogInPage extends StatefulWidget {
   const LogInPage({super.key});
@@ -71,9 +71,10 @@ class _LogInPageState extends State<LogInPage> {
     if (_isSpeaking) return;
 
     _shouldStop = false;
+
     setState(() {
       _isSpeaking = true;
-      _highlightTarget = 3; // voice icon
+      _highlightTarget = 3;
     });
 
     bool abort() => _shouldStop;
@@ -81,38 +82,60 @@ class _LogInPageState extends State<LogInPage> {
     try {
       if (_step == 1) {
         setState(() => _highlightTarget = 1);
-        if (widget.language == "hi") {
-          await _tts.speak("लॉगिन करने के लिए अपना मोबाइल नंबर दर्ज करें।");
-        } else {
-          await _tts.speak("Please enter your mobile number.");
-        }
+
+        await TTSService.speak(
+          AppLocalization.tts(
+            "authentication",
+            "enterPhone",
+          ),
+        );
+
         if (abort()) return;
 
         setState(() => _highlightTarget = 2);
-        if (widget.language == "hi") {
-          await _tts.speak("फिर नीचे कंटिन्यू बटन दबाएँ।");
-        } else {
-          await _tts.speak("Then press the Continue button.");
-        }
+
+        await TTSService.speak(
+          AppLocalization.tts(
+            "authentication",
+            "continueInstruction",
+          ),
+        );
       }
 
       if (_step == 2) {
         setState(() => _highlightTarget = 1);
-        if (widget.language == "hi") {
-          await _tts.speak("अब ओटीपी दर्ज करें।");
-        } else {
-          await _tts.speak("Now enter the OTP.");
-        }
+
+        await TTSService.speak(
+          AppLocalization.tts(
+            "authentication",
+            "enterOtp",
+          ),
+        );
+
         if (abort()) return;
 
         setState(() => _highlightTarget = 2);
-        if (widget.language == "hi") {
-          await _tts.speak("फिर वेरिफ़ाई बटन दबाएँ।");
-        } else {
-          await _tts.speak("Then press the Verify button.");
-        }
+
+        await TTSService.speak(
+          AppLocalization.tts(
+            "authentication",
+            "verifyInstruction",
+          ),
+        );
       }
-    } catch (_) {}
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _highlightTarget = 0;
+        });
+      }
+    }
+  }
+  Future<void> _stopSpeaking() async {
+    _shouldStop = true;
+
+    await TTSService.stop();
 
     if (mounted) {
       setState(() {
@@ -121,16 +144,6 @@ class _LogInPageState extends State<LogInPage> {
       });
     }
   }
-
-  Future<void> _stopSpeaking() async {
-    _shouldStop = true;
-    await _tts.stop();
-    setState(() {
-      _isSpeaking = false;
-      _highlightTarget = 0;
-    });
-  }
-
   // ---------------- SPEECH ----------------
   Widget micIcon(String field) {
     final active = _isListening && _listeningField == field;
@@ -190,47 +203,66 @@ class _LogInPageState extends State<LogInPage> {
   // ---------------- FIREBASE ----------------
   Future<void> _sendOtp() async {
     if (_phoneCtrl.text.length != 10) {
-      if (widget.language == "hi") {
-        await _tts.speak("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।");
-      } else {
-        await _tts.speak("Please enter a valid ten digit mobile number.");
-      }
+      await TTSService.speak(
+        AppLocalization.tts(
+          "authentication",
+          "invalidPhoneSpeak",
+        ),
+      );
       return;
     }
 
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: "+91${_phoneCtrl.text}",
+
       verificationCompleted: (_) {},
-      verificationFailed: (e) {
-        setState(() => _error = e.message);
+
+      verificationFailed: (FirebaseAuthException e) {
+        setState(() {
+          _error = e.message;
+        });
       },
-      codeSent: (id, _) {
-        _verificationId = id;
-        setState(() => _step = 2);
+
+      codeSent: (String verificationId, int? resendToken) {
+        setState(() {
+          _verificationId = verificationId;
+          _step = 2;
+        });
+
         _speakLoginInstructions();
       },
-      codeAutoRetrievalTimeout: (_) {},
+
+      codeAutoRetrievalTimeout: (String verificationId) {
+        _verificationId = verificationId;
+      },
     );
   }
-
   Future<void> _verifyOtp() async {
     try {
-      final cred = PhoneAuthProvider.credential(
+      final credential = PhoneAuthProvider.credential(
         verificationId: _verificationId,
         smsCode: _otpCtrl.text,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(cred);
+      await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      if (!mounted) return;
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MainShell()),
+        MaterialPageRoute(
+          builder: (_) => const MainShell(),
+        ),
       );
     } catch (_) {
-      if (widget.language == "hi") {
-        await _tts.speak("ओटीपी गलत है।");
-      } else {
-        await _tts.speak("The OTP is incorrect.");
-      }
+      await TTSService.speak(
+        AppLocalization.tts(
+          "authentication",
+          "invalidOtp",
+        ),
+      );
     }
   }
 
@@ -255,7 +287,7 @@ class _LogInPageState extends State<LogInPage> {
                   color: Color(0xFF9B4DFF),
                 ),
                 onPressed: () async {
-                  await _tts.stop();
+                  await TTSService.stop();
                   _speakLoginInstructions();
                 },
               ),
@@ -294,7 +326,10 @@ class _LogInPageState extends State<LogInPage> {
                   _highlight(
                     active: _highlightTarget == 1,
                     child: _buildField(
-                      "Mobile Number",
+                      AppLocalization.ui(
+                        "authentication",
+                        "phoneNumber",
+                      ),
                       _phoneCtrl,
                       'phone',
                     ),
@@ -303,7 +338,14 @@ class _LogInPageState extends State<LogInPage> {
                 if (_step == 2)
                   _highlight(
                     active: _highlightTarget == 1,
-                    child: _buildField("OTP", _otpCtrl, 'otp'),
+                    child: _buildField(
+                      AppLocalization.ui(
+                        "authentication",
+                        "otp",
+                      ),
+                      _otpCtrl,
+                      'otp',
+                    ),
                   ),
 
                 const SizedBox(height: 24),
@@ -320,7 +362,15 @@ class _LogInPageState extends State<LogInPage> {
                       ),
                     ),
                     child: Text(
-                      _step == 1 ? "Continue" : "Verify",
+                      _step == 1
+                          ? AppLocalization.ui(
+                              "authentication",
+                              "continue",
+                            )
+                          : AppLocalization.ui(
+                              "authentication",
+                              "verify",
+                            ),
                       style:
                           const TextStyle(fontSize: 18, color: Colors.white),
                     ),
@@ -393,7 +443,15 @@ class _LogInPageState extends State<LogInPage> {
                 backgroundColor: const Color(0xFF9B4DFF),
               ),
               child:
-                  const Text("Skip", style: TextStyle(color: Colors.white)),
+                  Text(
+                    AppLocalization.ui(
+                      "common",
+                      "skip",
+                    ),
+                    style: const TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
             ),
           ),
         ),

@@ -33,6 +33,9 @@ const Map<String, dynamic> welcome = {
     "signup":
         "Press Sign Up to create a new account.",
 
+    "skipInstruction":
+        "If you already know these instructions, press the Skip Voice button.",
+
     "completed":
         "Welcome page loaded successfully."
   }

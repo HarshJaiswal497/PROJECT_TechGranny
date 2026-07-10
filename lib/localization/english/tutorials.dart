@@ -18,6 +18,18 @@ const Map<String, dynamic> tutorials = {
 
     "doctor": "Book a Doctor Online",
 
+    "upiStep1Title": "Open UPI App",
+
+    "upiStep2Title": "Tap Scan QR",
+
+    "upiStep3Title": "Scan Store QR",
+
+    "upiStep4Title": "Enter Amount",
+
+    "upiStep5Title": "Enter UPI PIN",
+
+    "upiStep6Title": "Payment Successful",
+
     "step": "Step",
 
     "of": "of",
@@ -31,6 +43,18 @@ const Map<String, dynamic> tutorials = {
     "exitTutorial": "Exit Tutorial",
 
     "skipVoice": "Skip Voice",
+
+    "photoStep1Title": "Open WhatsApp",
+
+    "photoStep2Title": "Select Contact",
+
+    "photoStep3Title": "Tap Attachment",
+
+    "photoStep4Title": "Choose Gallery",
+
+    "photoStep5Title": "Send Photo",
+
+    "photoStep6Title": "Photo Sent Successfully",
 
     "progress": "Progress"
   },
@@ -64,6 +88,42 @@ const Map<String, dynamic> tutorials = {
         "Press Finish to complete the tutorial.",
 
     "exit":
-        "Press Exit Tutorial to leave the lesson."
+        "Press Exit Tutorial to leave the lesson.",
+
+    "upiStep1Instruction":
+        "First, open your UPI app such as Google Pay, PhonePe, or BHIM.",
+
+    "upiStep2Instruction":
+        "Now tap on the Scan QR button.",
+
+    "upiStep3Instruction":
+        "Point your camera towards the shop's QR code and let it scan.",
+
+    "upiStep4Instruction":
+        "Enter the amount you want to pay. For example, one hundred rupees.",
+
+    "upiStep5Instruction":
+        "Now enter your UPI PIN to complete the payment. Never share your UPI PIN with anyone.",
+
+    "photoStep1Instruction":
+        "First, open the WhatsApp application.",
+
+    "photoStep2Instruction":
+        "Open the chat of the person to whom you want to send the photo.",
+
+    "photoStep3Instruction":
+        "Tap the attachment icon near the message box.",
+
+    "photoStep4Instruction":
+        "Select Gallery to view your phone's photos.",
+
+    "photoStep5Instruction":
+        "Choose the photo and press the send button.",
+
+    "photoStep6Instruction":
+        "Congratulations! Your photo has been sent successfully. Now you can easily share photos on WhatsApp.",
+
+    "upiStep6Instruction":
+        "Congratulations! Your payment has been completed successfully. You can now safely make payments using QR codes."
   }
 };

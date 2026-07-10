@@ -40,7 +40,7 @@ class _MainShellState extends State<MainShell> {
   final List<String> _labels = [
     "Home",
     "Learn",
-    "Appointments",
+    "Help Centre",
     "Profile",
   ];
 

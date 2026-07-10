@@ -1,7 +1,11 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:provider/provider.dart';
+import '../localization/language_provider.dart';
+import '../services/tts_service.dart';
+import '../localization/app_localization.dart';
+import '../localization/language_manager.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -13,7 +17,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final FlutterTts _tts = FlutterTts();
+
 
   bool _isSpeaking = false;
   bool _shouldStop = false;
@@ -23,22 +27,28 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _name = '';
   String _phone = '';
+  String _language = "hi";
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _initTts();
-    _fetchProfile();
+
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await TTSService.initialize();
+
+    await TTSService.setLanguage(
+      LanguageManager.currentLanguage,
+    );
+
+    await _fetchProfile();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _speakInstructions();
     });
-  }
-
-  Future<void> _initTts() async {
-    await _tts.awaitSpeakCompletion(true);
-    await _tts.setLanguage("hi-IN");
-    await _tts.setSpeechRate(0.5);
   }
 
   Future<void> _fetchProfile() async {
@@ -67,68 +77,112 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_isSpeaking) return;
 
     _shouldStop = false;
+
     setState(() {
       _isSpeaking = true;
-      _highlightTarget = 5; // voice icon
+      _highlightTarget = 5;
     });
 
     bool abort() => _shouldStop;
 
     try {
       setState(() => _highlightTarget = 1);
-      await _tts.speak(
-        "नमस्ते ${_name.isNotEmpty ? _name + " जी" : ""}। यह आपका प्रोफ़ाइल पेज है।",
+
+      await TTSService.speak(
+        AppLocalization.tts(
+          "profile",
+          "profileGreeting",
+        ).replaceAll(
+          "{name}",
+          _name.isEmpty
+              ? AppLocalization.ui("profile", "profileUser")
+              : "$_name Ji",
+        ),
       );
+
       if (abort()) return;
 
       setState(() => _highlightTarget = 2);
-      await _tts.speak("यहाँ आप अपनी पसंदीदा भाषा बदल सकते हैं।");
+
+      await TTSService.speak(
+        AppLocalization.tts(
+          "profile",
+          "changeLanguageInstruction",
+        ),
+      );
+
       if (abort()) return;
 
       setState(() => _highlightTarget = 3);
-      await _tts.speak("अगर आपको मदद चाहिए, तो हेल्प बटन दबाएँ।");
+
+      await TTSService.speak(
+        AppLocalization.tts(
+          "profile",
+          "helpInstruction",
+        ),
+      );
+
       if (abort()) return;
 
       setState(() => _highlightTarget = 4);
-      await _tts.speak(
-        "ऐप से सुरक्षित रूप से बाहर निकलने के लिए लॉग आउट बटन का उपयोग करें।",
+
+      await TTSService.speak(
+        AppLocalization.tts(
+          "profile",
+          "logoutInstruction",
+        ),
       );
-    } catch (_) {}
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _shouldStop = false;
+          _highlightTarget = 0;
+        });
+      }
+    }
+  }
+  Future<void> _stopSpeaking() async {
+    _shouldStop = true;
+
+    await TTSService.stop();
 
     if (mounted) {
       setState(() {
         _isSpeaking = false;
-        _shouldStop = false;
         _highlightTarget = 0;
       });
     }
   }
-
-  Future<void> _stopSpeaking() async {
-    _shouldStop = true;
-    try {
-      await _tts.stop();
-    } catch (_) {}
-    setState(() {
-      _isSpeaking = false;
-      _highlightTarget = 0;
-    });
-  }
-
   // ---------------- ACTIONS ----------------
   Future<void> _changeLanguage() async {
     final selected = await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Choose Language"),
+        title: Text(
+          AppLocalization.ui(
+            "profile",
+            "chooseLanguage",
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, 'hi'),
-            child: const Text("Hindi (हिंदी)"),
+            child: Text(
+              AppLocalization.ui(
+                "profile",
+                "hindi",
+              ),
+            )
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, 'en'),
-            child: const Text("English"),
+            child: Text(
+              AppLocalization.ui(
+                "profile",
+                "english",
+              ),
+            ),
           ),
         ],
       ),
@@ -145,10 +199,20 @@ class _ProfilePageState extends State<ProfilePage> {
 
     setState(() => _language = selected);
 
-    await _tts.speak(
-      selected == 'hi'
-          ? "भाषा हिंदी में सेट कर दी गई है।"
-          : "Language set to English.",
+    final provider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+
+    await provider.changeLanguage(selected);
+
+    await TTSService.setLanguage(selected);
+
+    await TTSService.speak(
+      AppLocalization.tts(
+        "profile",
+        "languageChanged",
+      ),
     );
   }
 
@@ -161,6 +225,7 @@ class _ProfilePageState extends State<ProfilePage> {
   // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
+    context.watch<LanguageProvider>();
     return Scaffold(
       body: Stack(
         children: [
@@ -179,7 +244,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: Color(0xFF9B4DFF),
                 ),
                 onPressed: () async {
-                  await _tts.stop();
+                  await TTSService.stop();
                   _speakInstructions();
                 },
               ),
@@ -225,8 +290,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 active: _highlightTarget == 2,
                 child: _actionCard(
                   icon: Icons.language,
-                  title: "Language",
-                  subtitle: _language == 'hi' ? "Hindi (हिंदी)" : "English",
+                  title: AppLocalization.ui(
+                    "profile",
+                    "language",
+                  ),
+                  subtitle: _language == "hi"
+                      ? AppLocalization.ui("profile", "hindi")
+                      : AppLocalization.ui("profile", "english"),
                   onTap: _changeLanguage,
                 ),
               ),
@@ -235,17 +305,34 @@ class _ProfilePageState extends State<ProfilePage> {
                 active: _highlightTarget == 3,
                 child: _actionCard(
                   icon: Icons.help_outline,
-                  title: "Help",
-                  subtitle: "Need help using the app?",
+                  title: AppLocalization.ui(
+                    "profile",
+                    "help",
+                  ),
+                  subtitle: AppLocalization.ui(
+                    "profile",
+                    "helpSubtitle",
+                  ),
                   onTap: () async {
-                    await _tts.speak(
-                      "अगर आप कहीं अटक जाएँ, तो चिंता मत कीजिए।",
+                    await TTSService.speak(
+                      AppLocalization.tts(
+                        "profile",
+                        "helpLine1",
+                      ),
                     );
-                    await _tts.speak(
-                      "हर पेज के ऊपर दिए गए वॉइस आइकन पर टैप करें।",
+
+                    await TTSService.speak(
+                      AppLocalization.tts(
+                        "profile",
+                        "helpLine2",
+                      ),
                     );
-                    await _tts.speak(
-                      "दोबारा सुनें और समझें कि आगे क्या करना है।",
+
+                    await TTSService.speak(
+                      AppLocalization.tts(
+                        "profile",
+                        "helpLine3",
+                      ),
                     );
                   },
                 ),
@@ -295,7 +382,12 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 12),
           Text(
-            _loading ? "Loading..." : "${_name.isNotEmpty ? _name : "User"} Ji",
+            _loading
+                ? AppLocalization.ui(
+                    "profile",
+                    "loading",
+                  )
+                : "${_name.isNotEmpty ? _name : AppLocalization.ui("profile", "profileUser")} Ji",
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
@@ -354,12 +446,20 @@ class _ProfilePageState extends State<ProfilePage> {
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.redAccent,
         padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
       ),
       onPressed: _logout,
-      child: const Text(
-        "Log Out",
-        style: TextStyle(color: Colors.white, fontSize: 16),
+      child: Text(
+        AppLocalization.ui(
+          "profile",
+          "logout",
+        ),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+        ),
       ),
     );
   }
@@ -385,9 +485,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  "Skip",
-                  style: TextStyle(color: Colors.white),
+                child: Text(
+                  AppLocalization.ui(
+                    "common",
+                    "skip",
+                  ),
+                  style: const TextStyle(
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -396,7 +501,11 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-
+  @override
+  void dispose() {
+    TTSService.stop();
+    super.dispose();
+  }
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: Colors.white.withOpacity(0.9),

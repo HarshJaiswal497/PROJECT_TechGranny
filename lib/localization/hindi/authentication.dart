@@ -67,6 +67,21 @@ const Map<String, dynamic> authentication = {
     "alreadyAccount":
         "यदि आपका पहले से खाता है, तो लॉगिन बटन दबाएँ।",
 
+    "continueInstruction":
+        "फिर नीचे जारी रखें बटन दबाएँ।",
+
+    "enterOtp":
+        "अब ओटीपी दर्ज करें।",
+
+    "verifyInstruction":
+        "फिर सत्यापित करें बटन दबाएँ।",
+
+    "invalidOtp":
+        "ओटीपी गलत है।",
+
+    "invalidPhoneSpeak":
+        "कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।",
+
     "newAccount":
         "यदि आप नए उपयोगकर्ता हैं, तो साइन अप बटन दबाएँ।"
   }
