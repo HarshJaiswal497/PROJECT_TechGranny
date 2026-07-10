@@ -511,33 +511,37 @@ class _HomePageState extends State<HomePage> {
     return Positioned.fill(
       child: Container(
         color: Colors.black.withOpacity(0.45),
-        child: Align(
-          alignment: Alignment.bottomRight,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: ElevatedButton(
-              onPressed: _stopSpeaking,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF9B4DFF),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 18,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Positioned(
+                right: 20,
+                bottom: 20,
+                child: ElevatedButton(
+                  onPressed: _stopSpeaking,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9B4DFF),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 18,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    AppLocalization.ui(
+                      "home",
+                      "skip",
+                    ),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
-              child:  Text(
-                AppLocalization.ui(
-                  "home",
-                  "skip",
-                ),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            ],
           ),
         ),
       ),

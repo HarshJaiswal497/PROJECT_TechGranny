@@ -472,7 +472,7 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             Positioned(
               right: 20,
-              bottom: 110,
+              bottom: 140,
               child: ElevatedButton(
                 onPressed: _stopSpeaking,
                 style: ElevatedButton.styleFrom(
