@@ -78,7 +78,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       setState(() => _highlightTarget = 1);
       await _tts.speak(
-        "नमस्ते ${_name.isNotEmpty ? _name + " जी" : ""}। यह आपका प्रोफ़ाइल पेज है।",
+        "नमस्ते ${_name.isNotEmpty ? "$_name जी" : ""}। यह आपका प्रोफ़ाइल पेज है।",
       );
       if (abort()) return;
 

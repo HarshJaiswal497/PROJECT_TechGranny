@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:techgrannyapp/pages/tutorials/video_call_tutorial_page.dart';
+import 'package:techgrannyapp/pages/tutorials/send_photos_tutorial_page.dart';
+import 'package:techgrannyapp/pages/tutorials/pay_via_upi_tutorial_page.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onViewAllTutorials;
@@ -314,14 +316,30 @@ class _HomePageState extends State<HomePage> {
                               "assets/images/upi.jpg",
                               0.3,
                               Icons.qr_code_2_rounded,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const PayViaUpiTutorialPage(),
+                                  ),
+                                );
+                              },
                             ),
                             buildTutorialCard(
                               "Send Photos on WhatsApp",
                               "assets/images/chat.jpg",
                               0.8,
                               Icons.chat_bubble_outline_rounded,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const SendPhotosTutorialPage(),
+                                  ),
+                                );
+                              },,
                             ),
                             buildTutorialCard(
                               "Book a Doctor Online",

@@ -17,18 +17,18 @@ class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
   List<Widget> get _pages => [
-        HomePage(
-          onViewAllTutorials: () {
-            setState(() => _currentIndex = 1); // Learn tab
-          },
-          onViewAllAppointments: () {
-            setState(() => _currentIndex = 2); // Appointments tab
-          },
-        ),
-        const TutorialsPage(),
-        const AppointmentsPage(),
-        const ProfilePage(),
-      ];
+    HomePage(
+      onViewAllTutorials: () {
+        setState(() => _currentIndex = 1); // Learn tab
+      },
+      onViewAllAppointments: () {
+        setState(() => _currentIndex = 2); // Appointments tab
+      },
+    ),
+    const TutorialsPage(),
+    const AppointmentsPage(),
+    const ProfilePage(),
+  ];
 
   final List<IconData> _icons = [
     Icons.home_rounded,
@@ -37,12 +37,7 @@ class _MainShellState extends State<MainShell> {
     Icons.person_rounded,
   ];
 
-  final List<String> _labels = [
-    "Home",
-    "Learn",
-    "Appointments",
-    "Profile",
-  ];
+  final List<String> _labels = ["Home", "Learn", "Appointments", "Profile"];
 
   @override
   Widget build(BuildContext context) {
@@ -70,10 +65,10 @@ class _MainShellState extends State<MainShell> {
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                   ),
                 ),
                 child: BottomNavigationBar(
@@ -98,7 +93,7 @@ class _MainShellState extends State<MainShell> {
                         ),
                         decoration: BoxDecoration(
                           color: selected
-                              ? Colors.deepPurple.withOpacity(0.15)
+                              ? Colors.deepPurple.withValues(alpha: 0.15)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                         ),
